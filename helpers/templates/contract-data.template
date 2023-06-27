@@ -1,0 +1,14 @@
+// deployed_index: ##deployed_index##
+// deployed_at: ##deployed_at##
+
+import {ContractData} from "../helpers/interfaces/contract_data_interface";
+const ##name##_data: ContractData = {
+    env: '##env##',
+    network: '##network##',
+    contract_name: '##contract_name##',
+    address: '##address##',
+    libraries: ##libraries##,
+    abi: ##abi##
+};
+
+export default ##name##_data;

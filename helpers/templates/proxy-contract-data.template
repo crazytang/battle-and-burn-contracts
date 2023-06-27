@@ -1,0 +1,16 @@
+// deployed_index: ##deployed_index##
+// deployed_at: ##deployed_at##
+
+import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
+const ##name##_data: ProxyContractData = {
+    env: '##env##',
+    network: '##network##',
+    contract_name: '##contract_name##',
+    address: '##address##',
+    proxy_address: '##proxy_address##',
+    target_address: '##target_address##',
+    libraries: ##libraries##,
+    abi: ##abi##
+};
+
+export default ##name##_data;
