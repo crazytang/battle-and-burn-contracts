@@ -5,6 +5,8 @@ interface ICreationNFT {
 
     function mint(address _to, uint256 _tokenId) external;
 
+    function setRoyalty(address _to, uint96 _fee) external;
+
     function setBaseURI(string calldata tokenURI) external;
 
     function baseURI() external view returns (string memory);

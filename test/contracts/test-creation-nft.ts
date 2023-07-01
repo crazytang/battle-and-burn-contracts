@@ -1,11 +1,12 @@
 import {ContractReceipt, ContractTransaction, Wallet} from "ethers";
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
-import {bnToNoPrecisionNumber, setDefaultGasOptions} from "../../helpers/contract/contract-utils";
+import {bnToNoPrecisionNumber, numberToBn, setDefaultGasOptions} from "../../helpers/contract/contract-utils";
 import {get_user_wallet_5712} from "../../helpers/wallets/user_wallet_getter";
 import {CreationNFT, CreationNFT__factory} from "../../typechain-types";
 import CreationNFT_data from "../../contract-data/CreationNFT-data";
 import {expect} from "chai";
+import RoyaltyDistributor_data from "../../contract-data/RoyaltyDistributor-data";
 
 let tx: ContractTransaction
 let receipt: ContractReceipt
@@ -88,6 +89,36 @@ describe("Creation NFT testing", function () {
         const user1_new_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(user1_wallet.address))
         console.log('user1_new_nft_balance', user1_new_nft_balance)
         expect(user1_new_nft_balance).to.equal(user1_old_nft_balance + 1)
+    })
 
+    it('set royalty', async () => {
+        const tokenId = 0
+        const amount = 100
+        const [old_royalty_address, royalty_fee_bn] = await creation_nft.royaltyInfo(numberToBn(tokenId), amount)
+        const royalty_fee = bnToNoPrecisionNumber(royalty_fee_bn)
+        console.log('old_royalty_address', old_royalty_address)
+        console.log('royalty_fee', royalty_fee)
+
+        expect(old_royalty_address).equal(RoyaltyDistributor_data.address)
+
+        console.log('royalty fee rate', royalty_fee/amount)
+
+        tx = await creation_nft.setRoyalty(user1_wallet.address,1000)
+        console.log('creation_nft.setRoyalty() tx', tx.hash)
+        await tx.wait()
+
+        const [new_royalty_address, new_royalty_fee_bn] = await creation_nft.royaltyInfo(numberToBn(tokenId), amount)
+        const new_royalty_fee = bnToNoPrecisionNumber(new_royalty_fee_bn)
+        console.log('new_royalty_address', new_royalty_address)
+        console.log('new_royalty_fee', new_royalty_fee)
+        const new_royalty_fee_rate = new_royalty_fee/amount
+        console.log('new_royalty_fee_rate', new_royalty_fee_rate)
+
+        expect(new_royalty_address).not.equal(RoyaltyDistributor_data.address)
+        expect(new_royalty_fee).equal(amount*new_royalty_fee_rate)
+
+        // revert
+        tx = await creation_nft.setRoyalty(RoyaltyDistributor_data.address, royalty_fee_bn)
+        await tx.wait()
     })
 })

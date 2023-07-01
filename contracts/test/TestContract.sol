@@ -14,7 +14,7 @@ contract TestContract {
     }
 
     function createContract() public {
-        CreationNFT createNFT = new CreationNFT("test name", "testSymbol", "ipfs://xxxx");
+        CreationNFT createNFT = new CreationNFT("test name", "testSymbol", "ipfs://xxxx", 0xc807aF543aA56a16720A04E43453db35430E0056);
         createNFT.transferFrom(address(this), msg.sender, 0);
         createNFT.transferOwnership(msg.sender);
         emit CreatedContract(address(createNFT), createNFT.owner(), createNFT.name(), createNFT.symbol(), createNFT.baseURI());

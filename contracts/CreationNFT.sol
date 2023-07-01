@@ -1,13 +1,14 @@
-// ##deployed index: 3
-// ##deployed at: 2023/06/28 17:49:19
+// ##deployed index: 7
+// ##deployed at: 2023/07/01 16:28:36
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./dependencies/ERC721Enumerable.sol";
 import "./dependencies/Ownable.sol";
 import "./interfaces/ICreationNFT.sol";
+import "./dependencies/ERC2981.sol";
 
-contract CreationNFT is ICreationNFT, ERC721Enumerable, Ownable {
+contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable {
 
     /// @notice Track the max supply.
     uint256 constant max_supply = 10000;
@@ -15,23 +16,35 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, Ownable {
     /// @notice Track the base URI for token metadata.
     string token_base_URI;
 
+    /// @notice default royalty fee
+    uint96 constant royaltyFee = 500; // 5%
+
     /// @notice 构造函数
     /// @param _name NFT名称
     /// @param _symbol NFT符号
     /// @param __baseURI baseURI
-    constructor(string memory _name, string memory _symbol, string memory __baseURI) ERC721(_name, _symbol){
+    /// @param _royalty_address 版税接收地址
+    constructor(string memory _name, string memory _symbol, string memory __baseURI, address _royalty_address) ERC721(_name, _symbol){
         token_base_URI = __baseURI;
         _mint(msg.sender, 0);
+        _setDefaultRoyalty(_royalty_address, royaltyFee);
     }
 
     /// @notice 铸造
     /// @param _to 接收用户地址
     /// @param _tokenId tokenId
     function mint(address _to, uint256 _tokenId) external override onlyOwner {
-        require(_tokenId < maxSupply(), "SggcNFT: tokenId must be less than max supply");
-        require(_tokenId == totalSupply(), 'SggcNFT: tokenId is need to equal totalSupply()');
+        require(_tokenId < maxSupply(), "CreationNFT: tokenId must be less than max supply");
+        require(_tokenId == totalSupply(), 'CreationNFT: tokenId is need to equal totalSupply()');
 
         _mint(_to, _tokenId);
+    }
+
+    /// @notice 设定版税
+    /// @param _to 接收用户地址
+    /// @param _fee 费率，分母是10000
+    function setRoyalty(address _to, uint96 _fee) external override onlyOwner {
+        _setDefaultRoyalty(_to, _fee);
     }
 
     /**
@@ -41,7 +54,7 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, Ownable {
      */
     function setBaseURI(string calldata _new_base_URI) external override onlyOwner {
         require(keccak256(abi.encodePacked(_new_base_URI)) != keccak256(abi.encodePacked(token_base_URI)),
-            'SggcNFT: The new base URI is the same as the current one');
+            'CreationNFT: The new base URI is the same as the current one');
 
         // Set the new base URI.
         token_base_URI = _new_base_URI;
@@ -69,5 +82,9 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, Ownable {
      */
     function maxSupply() public pure returns (uint256) {
         return max_supply;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Enumerable, ERC2981) returns (bool) {
+        return interfaceId == type(IERC2981).interfaceId || interfaceId == type(ERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
     }
 }

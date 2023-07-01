@@ -1,12 +1,12 @@
-// deployed_index: 3
-// deployed_at: 2023/06/28 17:49:19
+// deployed_index: 7
+// deployed_at: 2023/07/01 16:28:36
 
 import {ContractData} from "../helpers/interfaces/contract_data_interface";
 const CreationNFT_data: ContractData = {
     env: 'test',
     network: 'arbitrum-goerli',
     contract_name: 'CreationNFT',
-    address: '0x67fE8b513586587CD205BB1C4e3938B8A03e6489',
+    address: '0x722bC6c2581302bd19273D8D33d8A71558bF2AeA',
     libraries: [],
     abi:  [
     {
@@ -23,8 +23,13 @@ const CreationNFT_data: ContractData = {
         },
         {
           "internalType": "string",
-          "name": "_baseURI",
+          "name": "__baseURI",
           "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "_royalty_address",
+          "type": "address"
         }
       ],
       "stateMutability": "nonpayable",
@@ -227,7 +232,7 @@ const CreationNFT_data: ContractData = {
           "type": "uint256"
         }
       ],
-      "stateMutability": "view",
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -298,6 +303,35 @@ const CreationNFT_data: ContractData = {
       "name": "renounceOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "salePrice",
+          "type": "uint256"
+        }
+      ],
+      "name": "royaltyInfo",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -378,6 +412,24 @@ const CreationNFT_data: ContractData = {
         }
       ],
       "name": "setBaseURI",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint96",
+          "name": "_fee",
+          "type": "uint96"
+        }
+      ],
+      "name": "setRoyalty",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

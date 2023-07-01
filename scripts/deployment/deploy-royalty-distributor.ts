@@ -3,25 +3,22 @@ import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
 import {bnToNumber, setDefaultGasOptions} from "../../helpers/contract/contract-utils";
 import {deploy_contract_to_file} from "../../helpers/contract/deploy-contract-to-files";
 import {ethers} from "ethers";
-import RoyaltyDistributor_data from "../../contract-data/RoyaltyDistributor-data";
+import {deploy_proxy_contract} from "../../helpers/contract/deploy-proxy-contract-to-files";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
-const contract_name = 'CreationNFT'
+const contract_name = 'RoyaltyDistributor'
 
 async function main() {
     await setDefaultGasOptions(provider)
 
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
-    if (RoyaltyDistributor_data == undefined || RoyaltyDistributor_data.address == '') {
-        throw new Error('RoyaltyDistributor not deployed')
-    }
+    const initialize_function = 'initialize()'
+    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [])
 
-    const baseUri = 'ipfs://bafybeifitgcwguqqvuiycjsxepvtjp3ix43ofrkm65kz2shea2fzqcee4i/'
-    const contract = await deploy_contract_to_file(admin_wallet, contract_name, ['Creation NFT', 'CREATION', baseUri,RoyaltyDistributor_data.address]);
+    console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
-    console.log(contract_name + ' deployed address', contract.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
