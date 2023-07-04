@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-library Structs {
+library MatchStructs {
 
     // 比赛数据
     struct MatchData {

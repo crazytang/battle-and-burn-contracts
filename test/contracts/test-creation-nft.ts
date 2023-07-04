@@ -120,5 +120,7 @@ describe("Creation NFT testing", function () {
         // revert
         tx = await creation_nft.setRoyalty(RoyaltyDistributor_data.address, royalty_fee_bn)
         await tx.wait()
+
+        await creation_nft.estimateGas.setRoyalty(user1_wallet.address,1000)
     })
 })
