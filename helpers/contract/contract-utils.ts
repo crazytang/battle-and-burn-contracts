@@ -1,4 +1,4 @@
-import {BigNumber, ContractReceipt, Signature, Wallet} from "ethers";
+import {BigNumber, Contract, ContractReceipt, Signature, Wallet} from "ethers";
 import {Provider} from "@ethersproject/abstract-provider";
 import axios from "axios";
 import {joinSignature, splitSignature} from "@ethersproject/bytes";
@@ -130,4 +130,15 @@ export const signMessageAndSplitByWallet = (wallet: Wallet, message: string): Si
 
 export const getGasUsedFromReceipt = (receipt: ContractReceipt): number => {
     return bnToNumber(receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice))
+}
+
+export const getLogFromReceipt = (receipt: ContractReceipt, contract: Contract,  event_name: string): any => {
+    for (let log of receipt.logs) {
+        const parsed = contract.interface.parseLog(log)
+        if (parsed.name === event_name) {
+            return parsed.args  // 事件的参数
+        }
+    }
+
+    return null
 }

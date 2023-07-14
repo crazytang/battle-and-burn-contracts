@@ -1,12 +1,35 @@
 import {ContractReceipt, ContractTransaction, Wallet} from "ethers";
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
-import {bnToNoPrecisionNumber, numberToBn, setDefaultGasOptions} from "../../helpers/contract/contract-utils";
-import {get_user_wallet_5712} from "../../helpers/wallets/user_wallet_getter";
-import {CreationNFT, CreationNFT__factory} from "../../typechain-types";
+import {
+    amount_equal_in_precision,
+    bnToNoPrecisionNumber, bnToNumber, getGasUsedFromReceipt, getLogFromReceipt,
+    getTransactionOptions,
+    numberToBn,
+    setDefaultGasOptions
+} from "../../helpers/contract/contract-utils";
+import {
+    get_user_wallet_114a,
+    get_user_wallet_5712,
+    get_user_wallet_d05a
+} from "../../helpers/wallets/user_wallet_getter";
+import {
+    CreationNFT,
+    CreationNFT__factory,
+    DistributionPolicyV1,
+    DistributionPolicyV1__factory
+} from "../../typechain-types";
 import CreationNFT_data from "../../contract-data/CreationNFT-data";
 import {expect} from "chai";
+import {
+    DistributionData,
+    fetchToDistributionData, fetchToRoyaltyInfo,
+    fetchToUserRewardData, RoyaltyInfo,
+    UserRewardData
+} from "../../helpers/contract/structs";
 import RoyaltyDistributor_data from "../../contract-data/RoyaltyDistributor-data";
+import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
+import TreasuryData from "../../contract-data/Treasury-data";
 
 let tx: ContractTransaction
 let receipt: ContractReceipt
@@ -39,24 +62,43 @@ describe("Creation NFT testing", function () {
         const nft_owner = await creation_nft.ownerOf(0)
         console.log('nft_owner', nft_owner)
         expect(nft_owner).to.equal(admin_wallet.address)
+
+        const distribution_role: DistributionData = fetchToDistributionData(await creation_nft.getDistributionRole())
+        console.log('distribution_role', distribution_role)
+
+        expect(distribution_role.creator).to.equal(admin_wallet.address)
+        expect(distribution_role.original_element_creator).to.equal(admin_wallet.address)
+
+        const element_creator1 = get_user_wallet_114a(provider)
+        const element_creator2 = get_user_wallet_d05a(provider)
+        expect(distribution_role.element_creators).to.deep.equal([element_creator1.address, element_creator2.address])
+
+        expect(distribution_role.element_creators.length).to.equal(distribution_role.element_quote_element_creators.length)
+
+        const user_reward_data: UserRewardData = fetchToUserRewardData(await creation_nft.getUserRewardData(admin_wallet.address))
+        console.log('user_reward_data', user_reward_data)
+
+        const royaltyInfo = await creation_nft.royaltyInfo(0, numberToBn(100))
+        console.log('royaltyInfo', royaltyInfo)
     })
 
-    it('set base uri', async () => {
-        const old_base_uri = await creation_nft.baseURI()
-        console.log('old_base_uri', old_base_uri)
-        expect(old_base_uri).not.empty
+    it('royaltyInfo', async () => {
+        const distribution_policy_address = await creation_nft.distribution_policy()
+        console.log('distribution_policy_address', distribution_policy_address)
+        expect(distribution_policy_address).equal(DistributionPolicyV1_data.address)
 
-        const new_base_uri = 'ipfs://bafybeibqw4pkqemew3dfef24qmh2hnekevniuheattyfp666txfmeh3uta/'
-        tx = await creation_nft.setBaseURI(new_base_uri)
-        console.log('creation_nft.setBaseURI() tx', tx.hash)
-        await tx.wait()
+        const distribution_policy: DistributionPolicyV1 = DistributionPolicyV1__factory.connect(distribution_policy_address, admin_wallet)
+        const royalty_fee_in_policy = bnToNoPrecisionNumber(await distribution_policy.royalty_fee())
+        console.log('royalty_fee_in_policy', royalty_fee_in_policy)
 
-        const base_uri = await creation_nft.baseURI()
-        expect(base_uri).to.equal(new_base_uri)
+        const denominator = bnToNoPrecisionNumber(await distribution_policy.DENOMINATOR())
+        const royalty_fee_rate = royalty_fee_in_policy / denominator
+        console.log('royalty_fee_rate', royalty_fee_rate)
 
-        // revert
-        tx = await creation_nft.setBaseURI(old_base_uri)
-        await tx.wait()
+        const amount = 100
+        const royaltyInfo: RoyaltyInfo = fetchToRoyaltyInfo(await creation_nft.royaltyInfo(0, numberToBn(amount)))
+        console.log('royaltyInfo', royaltyInfo)
+        expect(royalty_fee_rate).equal(royaltyInfo.royalty_amount_dec / amount)
     })
 
     it('mint and transfer', async () => {
@@ -89,38 +131,69 @@ describe("Creation NFT testing", function () {
         const user1_new_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(user1_wallet.address))
         console.log('user1_new_nft_balance', user1_new_nft_balance)
         expect(user1_new_nft_balance).to.equal(user1_old_nft_balance + 1)
-    })
-
-    it('set royalty', async () => {
-        const tokenId = 0
-        const amount = 100
-        const [old_royalty_address, royalty_fee_bn] = await creation_nft.royaltyInfo(numberToBn(tokenId), amount)
-        const royalty_fee = bnToNoPrecisionNumber(royalty_fee_bn)
-        console.log('old_royalty_address', old_royalty_address)
-        console.log('royalty_fee', royalty_fee)
-
-        expect(old_royalty_address).equal(RoyaltyDistributor_data.address)
-
-        console.log('royalty fee rate', royalty_fee/amount)
-
-        tx = await creation_nft.setRoyalty(user1_wallet.address,1000)
-        console.log('creation_nft.setRoyalty() tx', tx.hash)
-        await tx.wait()
-
-        const [new_royalty_address, new_royalty_fee_bn] = await creation_nft.royaltyInfo(numberToBn(tokenId), amount)
-        const new_royalty_fee = bnToNoPrecisionNumber(new_royalty_fee_bn)
-        console.log('new_royalty_address', new_royalty_address)
-        console.log('new_royalty_fee', new_royalty_fee)
-        const new_royalty_fee_rate = new_royalty_fee/amount
-        console.log('new_royalty_fee_rate', new_royalty_fee_rate)
-
-        expect(new_royalty_address).not.equal(RoyaltyDistributor_data.address)
-        expect(new_royalty_fee).equal(amount*new_royalty_fee_rate)
 
         // revert
-        tx = await creation_nft.setRoyalty(RoyaltyDistributor_data.address, royalty_fee_bn)
+        const user1_creation_nft = CreationNFT__factory.connect(creation_nft.address, user1_wallet)
+        tx = await user1_creation_nft.transferFrom(user1_wallet.address, admin_wallet.address, token_id)
+        await tx.wait()
+    })
+
+    it('test setDistributionPolicy()', async () => {
+        const distribution_policy_address = await creation_nft.distribution_policy()
+        console.log('distribution_policy_address', distribution_policy_address)
+        // expect(distribution_policy_address).equal(DistributionPolicyV1_data.address)
+
+        const new_distribution_policy = '0x259e132C4f175b48805BCd4ae4889df81D19ebD4'
+        tx = await creation_nft.setDistributionPolicy(new_distribution_policy, getTransactionOptions())
+        console.log('creation_nft.setDistributionPolicy() tx', tx.hash)
         await tx.wait()
 
-        await creation_nft.estimateGas.setRoyalty(user1_wallet.address,1000)
+        const new_distribution_policy_address = await creation_nft.distribution_policy()
+        console.log('new_distribution_policy_address', new_distribution_policy_address)
+        expect(new_distribution_policy_address).equal(new_distribution_policy)
+
+        // revert
+        tx = await creation_nft.setDistributionPolicy(DistributionPolicyV1_data.address, getTransactionOptions())
+        await tx.wait()
+    })
+
+    it('test distribute', async () => {
+        const distribution_policy_address = await creation_nft.distribution_policy()
+        if (distribution_policy_address != DistributionPolicyV1_data.address) {
+            throw new Error('distribution_policy_address != DistributionPolicyV1_data.address')
+        }
+
+        const royalty_amount = 0.1
+
+        const old_treasury_balance = bnToNumber(await provider.getBalance(TreasuryData.address))
+        console.log('old_treasury_balance', old_treasury_balance)
+
+        const old_user_balance = bnToNumber(await provider.getBalance(admin_wallet.address))
+        console.log('old_user_balance', old_user_balance)
+
+        const old_balance_in_nft = bnToNumber(await provider.getBalance(creation_nft.address))
+        console.log('old_balance_in_nft', old_balance_in_nft)
+
+        const tx_data = {...getTransactionOptions(), value: numberToBn(royalty_amount), to: creation_nft.address}
+        tx = await admin_wallet.sendTransaction(tx_data)
+        console.log('admin_wallet.sendTransaction() tx', tx.hash)
+        receipt = await tx.wait()
+        const gas_fee = getGasUsedFromReceipt(receipt)
+
+        const [treasury_address, to_treasury_amount_bn] = getLogFromReceipt(receipt, creation_nft, 'RemainingRewardToTreasury')
+        const to_treasury_amount = bnToNumber(to_treasury_amount_bn)
+        console.log('to_treasury_amount', to_treasury_amount)
+
+        const new_treasury_balance = bnToNumber(await provider.getBalance(TreasuryData.address))
+        console.log('new_treasury_balance', new_treasury_balance)
+        expect(amount_equal_in_precision(new_treasury_balance, old_treasury_balance + to_treasury_amount)).to.equal(true)
+
+        const new_user_balance = bnToNumber(await provider.getBalance(admin_wallet.address))
+        console.log('new_user_balance', new_user_balance)
+        expect(amount_equal_in_precision(new_user_balance, old_user_balance - gas_fee - royalty_amount)).to.equal(true)
+
+        const new_balance_in_nft = bnToNumber(await provider.getBalance(creation_nft.address))
+        console.log('new_balance_in_nft', new_balance_in_nft)
+        expect(amount_equal_in_precision(new_balance_in_nft, old_balance_in_nft + royalty_amount - to_treasury_amount)).to.equal(true)
     })
 })

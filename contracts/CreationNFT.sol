@@ -1,5 +1,5 @@
-// ##deployed index: 7
-// ##deployed at: 2023/07/01 16:28:36
+// ##deployed index: 27
+// ##deployed at: 2023/07/14 19:05:42
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -25,9 +25,9 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
     /// @notice Distribution Role
     DistributionStructs.DistributionRole distribution_role;
 
-    IDistributionPolicyV1 public distribution_policy;
+    IDistributionPolicyV1 public override distribution_policy;
 
-    mapping(address => DistributionStructs.UserRewardData) public users_reward_data;
+    mapping(address => DistributionStructs.UserRewardData) users_reward_data;
 
     address[] reward_users;
 
@@ -58,10 +58,20 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         }
     }
 
-    function transferOwnership(address newOwner) public override onlyOwner {
-        require(newOwner != address(0), "CreationNFT: new owner is the zero address");
-        super.transferOwnership(newOwner);
-        distribution_role.creator = newOwner;
+    /// @notice 设定分配策略合约地址
+    /// @param _distribution_policy_address 分配策略合约地址
+    function setDistributionPolicy(address _distribution_policy_address) external override onlyOwner {
+        require(Address.isContract(_distribution_policy_address), "CreationNFT: _distribution_policy_address is not contract");
+        distribution_policy = IDistributionPolicyV1(_distribution_policy_address);
+        emit SetDistributionPolicy(_distribution_policy_address);
+    }
+
+    /// @notice 转移NFT的所有权，代为生成NFT合约的时候需要调用该方法
+    /// @param _newOwner 新的所有者地址
+    function transferOwnership(address _newOwner) public override onlyOwner {
+        require(_newOwner != address(0), "CreationNFT: new owner is the zero address");
+        super.transferOwnership(_newOwner);
+        distribution_role.creator = _newOwner;
     }
 
     /// @notice 铸造
@@ -74,28 +84,8 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         _mint(_to, _tokenId);
     }
 
-    /// @notice 设定版税
-    /// @param _to 接收用户地址
-    /// @param _fee 费率，分母是10000
-/*    function setRoyalty(address _to, uint96 _fee) external override onlyOwner {
-        _setDefaultRoyalty(_to, _fee);
-    }*/
-
-    /**
-     * @notice 设定baseURI
-     * @dev 该方法只能由owner调用
-     * @param _new_base_URI The new base URI.
-     */
-/*    function setBaseURI(string calldata _new_base_URI) external override onlyOwner {
-        require(keccak256(abi.encodePacked(_new_base_URI)) != keccak256(abi.encodePacked(token_base_URI)),
-            'CreationNFT: The new base URI is the same as the current one');
-
-        // Set the new base URI.
-        token_base_URI = _new_base_URI;
-
-    }*/
-
     /// @notice 添加奖励用户
+    /// @param _user 奖励用户地址
     function addRewardUser(address _user) private {
         require(_user != address(0), "CreationNFT: _user is the zero address");
 
@@ -106,6 +96,8 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         }
 
         reward_users.push(_user);
+
+//        emit AddedRewardUser(_user);
     }
 
     /// @notice 分配奖励
@@ -115,9 +107,12 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         uint256[] memory _reward_addresses_amount;
         // 分配
         (_reward_addresses, _reward_addresses_amount) = distribution_policy.getDistributedResult(distribution_role, _profit);
-
         uint256 _cummulated_amount = 0;
         for (uint256 i=0;i<_reward_addresses_amount.length;i++) {
+            if (_reward_addresses[i] == address(0)) {
+                continue;
+            }
+
             users_reward_data[_reward_addresses[i]].claimable_amount += _reward_addresses_amount[i];
             _cummulated_amount += _reward_addresses_amount[i];
 
@@ -129,8 +124,9 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         // 剩下的余数给国库
         uint256 _treasury_amount = _profit - _cummulated_amount;
         if (_treasury_amount > 0) {
-            (bool success, ) = distribution_policy.TREASURY_ADDRESS().call{value: _treasury_amount}("");
+            (bool success, ) = address(distribution_policy.treasury()).call{value: _treasury_amount}("");
             require(success, "CreationNFT: unable to send value, recipient may have reverted");
+            emit RemainingRewardToTreasury(address(distribution_policy.treasury()), _treasury_amount);
         }
 
         integrityCheck();
@@ -150,17 +146,17 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
     }
 
     /// @notice 获取用户可领取奖励数量
-    function getClaimableRewardAmount(address _user) external view returns (uint256) {
+    function getClaimableRewardAmount(address _user) external view override returns (uint256) {
         return users_reward_data[_user].claimable_amount;
     }
 
     /// @notice 完整性检查
-    function integrityCheck() public view {
+    function integrityCheck() private view {
         uint256 _balance_in_contract = address(this).balance;
         uint256 _balance_in_users = 0;
 
         for (uint256 i=0;i<reward_users.length;i++) {
-            _balance_in_users -= users_reward_data[reward_users[i]].claimable_amount;
+            _balance_in_users += users_reward_data[reward_users[i]].claimable_amount;
         }
 
         if (_balance_in_contract != _balance_in_users) {
@@ -168,7 +164,7 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         }
     }
 
-    receive() external payable nonReentrant {
+    receive() external payable {
         distribute(msg.value);
     }
 
@@ -207,8 +203,24 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         return max_supply;
     }
 
+    /**
+     * @notice 获取分配角色
+     * @return DistributionStructs.DistributionRole 分配角色
+     */
+    function getDistributionRole() external view override returns (DistributionStructs.DistributionRole memory) {
+        return distribution_role;
+    }
+
+    /**
+     * @notice 获取用户奖励数据
+     * @param _user_address 用户地址
+     * @return DistributionStructs.UserRewardData 用户奖励数据
+     */
+    function getUserRewardData(address _user_address) external view override returns (DistributionStructs.UserRewardData memory) {
+        return users_reward_data[_user_address];
+    }
+
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Enumerable, ERC2981) returns (bool) {
         return interfaceId == type(IERC2981).interfaceId || interfaceId == type(ERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
     }
-
 }

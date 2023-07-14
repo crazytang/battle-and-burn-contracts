@@ -1,14 +1,14 @@
-// deployed_index: 2
-// deployed_at: 2023/07/01 17:19:41
+// deployed_index: 6
+// deployed_at: 2023/07/05 19:03:22
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const RoyaltyDistributor_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'RoyaltyDistributor',
-    address: '0x268bEdbb2177f32044a06f4559178509073616c6',
-    proxy_address: '0x268bEdbb2177f32044a06f4559178509073616c6',
-    target_address: '0xE6c5AD48a51EBb9d8db4F7e62FdA7Bf595A940C0',
+    address: '0x333f780Bb4ca4eB516eC1BfB6289e878A78eC4F9',
+    proxy_address: '0x333f780Bb4ca4eB516eC1BfB6289e878A78eC4F9',
+    target_address: '0x7F2c2eC17D5D2d6F5091336Ee8BB7A089E22F653',
     libraries: [],
     abi:  [
     {
@@ -49,6 +49,25 @@ const RoyaltyDistributor_data: ProxyContractData = {
       "type": "event"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        }
+      ],
+      "name": "getUserClaimableAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "initialize",
       "outputs": [],
@@ -87,6 +106,10 @@ const RoyaltyDistributor_data: ProxyContractData = {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
     }
   ],
   
