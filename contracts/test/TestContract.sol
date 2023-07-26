@@ -9,7 +9,7 @@ import "../CreationNFT.sol";
 contract TestContract {
 
     event CreatedContract(address indexed contract_address, address indexed owner, string name, string symbol, string baseURI);
-    function hashVoteResult(MatchStructs.VoteResult calldata _result) public pure returns (bytes32) {
+    function hashUserVote(MatchStructs.UserVote calldata _result) public pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(_result.matchId, _result.voter, _result.votedNFT, _result.votedTokenId))));
     }
 

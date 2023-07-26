@@ -1,74 +1,35 @@
-// deployed_index: 34
-// deployed_at: 2023/07/24 17:21:43
+// deployed_index: 21
+// deployed_at: 2023/05/17 16:59:31
 
 import {ContractData} from "../helpers/interfaces/contract_data_interface";
-const CreationNFT_data: ContractData = {
+
+const SggcNFT_data: ContractData = {
     env: 'test',
     network: 'arbitrum-goerli',
-    contract_name: 'CreationNFT',
-    address: '0x340A5d993c2fe3613E4945B0862a8BFf26d0B091',
+    contract_name: 'SggcNFT',
+    address: '0xb32C065F02B7Dca40b5329a5996D1dA78cf037d8',
     libraries: [],
-    abi:  [
-    {
-      "inputs": [
+    abi: [
         {
-          "internalType": "string",
-          "name": "_name",
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "_name",
+                    "type": "string"
+                },
+                {
+                    "internalType": "string",
+                    "name": "_symbol",
           "type": "string"
         },
         {
-          "internalType": "string",
-          "name": "_symbol",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "__baseURI",
-          "type": "string"
-        },
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "original_element_creator",
-              "type": "address"
-            },
-            {
-              "internalType": "address[]",
-              "name": "element_creators",
-              "type": "address[]"
-            },
-            {
-              "internalType": "address[]",
-              "name": "element_quote_element_creators",
-              "type": "address[]"
-            }
-          ],
-          "internalType": "struct DistributionStructs.DistributionRoleParams",
-          "name": "_distribution_role_params",
-          "type": "tuple"
-        },
-        {
-          "internalType": "address",
-          "name": "_distribution_policy_address",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "_max_supply",
+          "type": "uint256"
         }
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "new_user_address",
-          "type": "address"
-        }
-      ],
-      "name": "AddedRewardUser",
-      "type": "event"
     },
     {
       "anonymous": false,
@@ -124,6 +85,76 @@ const CreationNFT_data: ContractData = {
       "anonymous": false,
       "inputs": [
         {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_fromTokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_toTokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "BatchMetadataUpdate",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newContractURI",
+          "type": "string"
+        }
+      ],
+      "name": "ContractURIUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+            "indexed": true,
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+        },
+          {
+              "indexed": false,
+              "internalType": "string",
+              "name": "bill_no",
+              "type": "string"
+          },
+          {
+              "indexed": false,
+              "internalType": "string",
+              "name": "delivery_proof",
+              "type": "string"
+          }
+      ],
+      "name": "DeliveredCollection",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newMaxSupply",
+          "type": "uint256"
+        }
+      ],
+      "name": "MaxSupplyUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
           "indexed": true,
           "internalType": "address",
           "name": "previousOwner",
@@ -143,32 +174,19 @@ const CreationNFT_data: ContractData = {
       "anonymous": false,
       "inputs": [
         {
-          "indexed": true,
-          "internalType": "address",
-          "name": "treasury_address",
-          "type": "address"
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "previousHash",
+          "type": "bytes32"
         },
         {
           "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
+          "internalType": "bytes32",
+          "name": "newHash",
+          "type": "bytes32"
         }
       ],
-      "name": "RemainingRewardToTreasury",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "distribution_policy_address",
-          "type": "address"
-        }
-      ],
-      "name": "SetDistributionPolicy",
+      "name": "ProvenanceHashUpdated",
       "type": "event"
     },
     {
@@ -218,54 +236,6 @@ const CreationNFT_data: ContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_owner",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_spender",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_tokenId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_nonce",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_deadline",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint8",
-          "name": "_v",
-          "type": "uint8"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "_r",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "_s",
-          "type": "bytes32"
-        }
-      ],
-      "name": "approveBySig",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
           "name": "owner",
           "type": "address"
         }
@@ -296,22 +266,56 @@ const CreationNFT_data: ContractData = {
     },
     {
       "inputs": [],
-      "name": "claimReward",
+      "name": "contractURI",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+          {
+              "internalType": "uint256",
+              "name": "_tokenId",
+              "type": "uint256"
+          },
+          {
+              "internalType": "string",
+              "name": "_bill_no",
+              "type": "string"
+          },
+          {
+              "internalType": "string",
+              "name": "_delivery_proof",
+              "type": "string"
+          }
+      ],
+      "name": "deliverCollection",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "distribution_policy",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "contract IDistributionPolicyV1",
-          "name": "",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "_from_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_to_tokenId",
+          "type": "uint256"
         }
       ],
-      "stateMutability": "view",
+      "name": "emitBatchMetadataUpdate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -336,17 +340,49 @@ const CreationNFT_data: ContractData = {
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_user",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
         }
       ],
-      "name": "getClaimableRewardAmount",
+      "name": "getCollectionInfo",
       "outputs": [
         {
-          "internalType": "uint256",
+          "components": [
+              {
+                  "internalType": "string",
+                  "name": "barcode",
+                  "type": "string"
+              },
+              {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+              },
+              {
+                  "internalType": "bool",
+                  "name": "is_delivered",
+                  "type": "bool"
+              },
+              {
+                  "internalType": "uint256",
+                  "name": "delivered_at",
+                  "type": "uint256"
+              },
+              {
+                  "internalType": "string",
+                  "name": "bill_no",
+                  "type": "string"
+              },
+              {
+                  "internalType": "string",
+                  "name": "delivery_proof",
+                  "type": "string"
+              }
+          ],
+          "internalType": "struct ISggcNFT.CollectionInfo",
           "name": "",
-          "type": "uint256"
+          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -354,75 +390,12 @@ const CreationNFT_data: ContractData = {
     },
     {
       "inputs": [],
-      "name": "getDistributionRole",
+      "name": "getHistoryBaseURIs",
       "outputs": [
         {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "creator",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "original_element_creator",
-              "type": "address"
-            },
-            {
-              "internalType": "address[]",
-              "name": "element_creators",
-              "type": "address[]"
-            },
-            {
-              "internalType": "address[]",
-              "name": "element_quote_element_creators",
-              "type": "address[]"
-            }
-          ],
-          "internalType": "struct DistributionStructs.DistributionRole",
+          "internalType": "string[]",
           "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_user_address",
-          "type": "address"
-        }
-      ],
-      "name": "getUserRewardData",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "user_address",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "claimable_amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "claimed_amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "last_claimed_at",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct DistributionStructs.UserRewardData",
-          "name": "",
-          "type": "tuple"
+          "type": "string[]"
         }
       ],
       "stateMutability": "view",
@@ -462,23 +435,28 @@ const CreationNFT_data: ContractData = {
           "type": "uint256"
         }
       ],
-      "stateMutability": "pure",
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "inputs": [
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_tokenId",
-          "type": "uint256"
-        }
+          {
+              "internalType": "address",
+              "name": "_to",
+              "type": "address"
+          },
+          {
+              "internalType": "uint256",
+              "name": "_tokenId",
+              "type": "uint256"
+          },
+          {
+              "internalType": "string",
+              "name": "_barcode",
+              "type": "string"
+          }
       ],
-      "name": "mint",
+      "name": "mintSggc",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -491,25 +469,6 @@ const CreationNFT_data: ContractData = {
           "internalType": "string",
           "name": "",
           "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "nonces",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -549,38 +508,22 @@ const CreationNFT_data: ContractData = {
     },
     {
       "inputs": [],
-      "name": "renounceOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_tokenId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_salePrice",
-          "type": "uint256"
-        }
-      ],
-      "name": "royaltyInfo",
+      "name": "provenanceHash",
       "outputs": [
         {
-          "internalType": "address",
+          "internalType": "bytes32",
           "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
+          "type": "bytes32"
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -655,12 +598,51 @@ const CreationNFT_data: ContractData = {
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_distribution_policy_address",
-          "type": "address"
+          "internalType": "string",
+          "name": "_new_base_URI",
+          "type": "string"
         }
       ],
-      "name": "setDistributionPolicy",
+      "name": "setBaseURI",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_new_contractURI",
+          "type": "string"
+        }
+      ],
+      "name": "setContractURI",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_new_max_supply",
+          "type": "uint256"
+        }
+      ],
+      "name": "setMaxSupply",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "_new_provenance_hash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "setProvenanceHash",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -799,7 +781,7 @@ const CreationNFT_data: ContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_newOwner",
+          "name": "newOwner",
           "type": "address"
         }
       ],
@@ -807,26 +789,9 @@ const CreationNFT_data: ContractData = {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "version",
-      "outputs": [
-        {
-          "internalType": "uint8",
-          "name": "",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "receive"
     }
   ],
-  
+
 };
 
-export default CreationNFT_data;
+export default SggcNFT_data;

@@ -1,17 +1,21 @@
-// ##deployed index: 27
-// ##deployed at: 2023/07/14 19:05:42
+// ##deployed index: 34
+// ##deployed at: 2023/07/24 17:21:43
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "./dependencies/ERC721Enumerable.sol";
 import "./dependencies/Ownable.sol";
+import "./dependencies/ECDSA.sol";
 import "./dependencies/ERC2981.sol";
 import "./dependencies/ReentrancyGuard.sol";
 import "./interfaces/ICreationNFT.sol";
 import "./interfaces/IDistributionPolicyV1.sol";
 import "./libraries/DistributionStructs.sol";
+import "./interfaces/IApproveBySig.sol";
 
-contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, ReentrancyGuard {
+contract CreationNFT is ICreationNFT, IApproveBySig, ERC721Enumerable, ERC2981, Ownable, ReentrancyGuard {
+
+    using ECDSA for bytes32;
 
     /// @notice Track the max supply.
     uint256 constant max_supply = 10000;
@@ -30,6 +34,8 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
     mapping(address => DistributionStructs.UserRewardData) users_reward_data;
 
     address[] reward_users;
+
+    mapping(address => uint256) public override nonces;
 
     /// @notice 构造函数
     /// @param _name NFT名称
@@ -145,6 +151,35 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         integrityCheck();
     }
 
+    /// @notice 通过签名授权
+    /// @param _owner 所有者地址
+    /// @param _spender 授权地址
+    /// @param _tokenId tokenId
+    /// @param _nonce nonce
+    /// @param _deadline 截止时间
+    function approveBySig(address _owner, address _spender, uint256 _tokenId, uint256 _nonce, uint256 _deadline, uint8 _v, bytes32 _r, bytes32 _s) external override {
+        require(_owner != address(0), "CreationNFT: _owner is the zero address");
+        require(_spender != address(0), "CreationNFT: _spender is the zero address");
+        require(ownerOf(_tokenId) == _owner, "CreationNFT: _owner do not owned the _tokenId");
+        require(block.timestamp <= _deadline, "CreationNFT: Permit expired");
+        require(_nonce == nonces[_owner], "CreationNFT: invalid nonce");
+
+        bytes32 PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)");
+        bytes32 _hash = keccak256(abi.encode(
+                PERMIT_TYPEHASH,
+                _owner,
+                _spender,
+                _tokenId,
+                nonces[_owner]++,
+                _deadline
+            ));
+
+        address _signer = ecrecover(_hash, _v, _r, _s);
+        require(_signer == _owner, "CreationNFT: invalid signature");
+
+        _approve(_spender, _tokenId);
+    }
+
     /// @notice 获取用户可领取奖励数量
     function getClaimableRewardAmount(address _user) external view override returns (uint256) {
         return users_reward_data[_user].claimable_amount;
@@ -220,7 +255,11 @@ contract CreationNFT is ICreationNFT, ERC721Enumerable, ERC2981, Ownable, Reentr
         return users_reward_data[_user_address];
     }
 
+//    function getInterfaceId() public pure returns (bytes4) {
+//        return type(IApproveBySig).interfaceId;
+//    }
+
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Enumerable, ERC2981) returns (bool) {
-        return interfaceId == type(IERC2981).interfaceId || interfaceId == type(ERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IApproveBySig).interfaceId || interfaceId == type(IERC2981).interfaceId || interfaceId == type(ERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
     }
 }

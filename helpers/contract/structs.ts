@@ -3,6 +3,9 @@ import UserRewardDataStructOutput = DistributionStructs.UserRewardDataStructOutp
 import {BigNumber} from "ethers";
 import {bnToDate, bnToNoPrecisionNumber, bnToNumber} from "./contract-utils";
 import DistributionRoleStructOutput = DistributionStructs.DistributionRoleStructOutput;
+import {nowTimestamp} from "../utils";
+import {ethers} from "hardhat";
+import {string} from "hardhat/internal/core/params/argumentTypes";
 
 export interface DistributionData {
     creator: string
@@ -60,4 +63,66 @@ export const fetchToDistributedResult = (data: any): {} => {
     }
 
     return result
+}
+
+export interface NFTData {
+    nftAddress: string
+    tokenId: number
+    amount: number
+    stakedAt: number
+    stakedAtDate: string
+    isFrozen: boolean
+    beneficiaryAddress: string
+}
+
+export const fetchToNFTData = (data: any): NFTData => {
+    return {
+        nftAddress: data['nftAddress'],
+        tokenId: bnToNoPrecisionNumber(data['tokenId']),
+        amount: bnToNoPrecisionNumber(data['amount']),
+        stakedAt: bnToNoPrecisionNumber(data['stakedAt']),
+        stakedAtDate: bnToDate(data[3]),
+        isFrozen: data['isFrozen'],
+        beneficiaryAddress: data['beneficiaryAddress']
+    }
+}
+
+export interface MatchData {
+    matchId: string
+    matchName: string
+    matchStartTime: number
+    matchEndTime: number
+    voteCount: number
+    voteArenaCount: number
+    voteChallengeCount: number
+    arenaNFT: string
+    arenaTokenId: number
+    arenaOwnerSignature: string
+    challengeNFT: string
+    challengeTokenId: number
+    challengeOwnerSignature: string
+    merkleTreeURI: string
+    merkleTreeRoot: string
+    burnedAt: number
+}
+
+export const fetchToMatchData = (data: any): MatchData => {
+    return {
+        matchId: data['matchId'],
+        matchName: data['matchName'],
+        matchStartTime: bnToNoPrecisionNumber(data['matchStartTime']),
+        matchEndTime: bnToNoPrecisionNumber(data['matchEndTime']),
+        voteCount: bnToNoPrecisionNumber(data['voteCount']),
+        voteArenaCount: bnToNoPrecisionNumber(data['voteArenaCount']),
+        voteChallengeCount: bnToNoPrecisionNumber(data['voteChallengeCount']),
+        arenaNFT: data['arenaNFT'],
+        arenaTokenId: bnToNoPrecisionNumber(data['arenaTokenId']),
+        arenaOwnerSignature: data['arenaOwnerSignature'],
+        challengeNFT: data['challengeNFT'],
+        challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
+        challengeOwnerSignature: data['challengeOwnerSignature'],
+        merkleTreeURI: data['merkleTreeURI'],
+        merkleTreeRoot: data['merkleTreeRoot'],
+        burnedAt: bnToNoPrecisionNumber(data['burnedAt'])
+    }
 }

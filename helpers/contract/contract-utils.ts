@@ -1,7 +1,8 @@
-import {BigNumber, Contract, ContractReceipt, Signature, Wallet} from "ethers";
+import {BigNumber, Contract, ContractReceipt, ethers, Signature, Wallet} from "ethers";
 import {Provider} from "@ethersproject/abstract-provider";
 import axios from "axios";
 import {joinSignature, splitSignature} from "@ethersproject/bytes";
+import {Result} from "@ethersproject/abi";
 
 export const setDefaultGasOptions = async function (provider: Provider) {
     const options = getTransactionOptions();
@@ -124,8 +125,16 @@ export const signMessageByWallet = (wallet: Wallet, message: string): string => 
     return joinSignature(wallet._signingKey().signDigest(message))
 }
 
+export const recoverAddressFromSignedMessage = (message: string, signature: string): string => {
+    return ethers.utils.recoverAddress(message, signature)
+}
+
 export const signMessageAndSplitByWallet = (wallet: Wallet, message: string): Signature => {
     return splitSignature(wallet._signingKey().signDigest(message))
+}
+
+export const recoverAddressFromSignedMessageAndSplit = (message: string, r:string, s:string, v:number): string => {
+    return ethers.utils.recoverAddress(message, {r, v, s})
 }
 
 export const getGasUsedFromReceipt = (receipt: ContractReceipt): number => {
@@ -141,4 +150,16 @@ export const getLogFromReceipt = (receipt: ContractReceipt, contract: Contract, 
     }
 
     return null
+}
+
+export const solidityAbiEncode = (types: string[], values: any[]): string => {
+    return ethers.utils.defaultAbiCoder.encode(types, values)
+}
+
+export const solidityAbiDecode = (types: string[], data: string): Result => {
+    return ethers.utils.defaultAbiCoder.decode(types, data)
+}
+
+export const solidityAbiEncodePacked = (types: string[], values: any[]): string => {
+    return ethers.utils.solidityPack(types, values)
 }

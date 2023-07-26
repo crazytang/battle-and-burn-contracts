@@ -9,31 +9,68 @@ library MatchStructs {
         string matchName; // 比赛名称
         uint256 matchStartTime; // 比赛开始时间
         uint256 matchEndTime; // 比赛结束时间
+
         uint256 voteCount; // 投票数量
-        uint256 votePositiveCount; // 投票正面数量
-        uint256 voteNegativeCount; // 投票反面数量
-        address positiveNFT; // 正面NFT地址
-        uint256 positiveTokenId; // 正面NFT的tokenId
-        address negativeNFT; // 反面NFT地址
-        uint256 negativeTokenId; // 反面NFT的tokenId
+        uint256 voteArenaCount; // 投票摆擂台数量
+        uint256 voteChallengeCount; // 投票挑战者数量
+
+        address arenaNFT; // 摆擂台的NFT地址
+        uint256 arenaTokenId; // 摆擂台的NFT的tokenId
+        bytes arenaOwnerSignature; // 摆擂台NFT持有人签名
+
+        address challengeNFT; // 挑战者NFT地址
+        uint256 challengeTokenId; // 挑战者NFT的tokenId
+        bytes challengeOwnerSignature; // 挑战者NFT持有人签名
+
         string merkleTreeURI; // 投票结果MerkleTree的IPFS地址，用户可以自行验证
         bytes32 merkleTreeRoot; // 投票结果MerkleTree的根节点
+
+        uint256 burnedAt; // 比赛结束后，烧毁NFT的时间
     }
 
     // 投票数据
     struct VoteData {
-        bytes32 matchId; // 比赛ID
+        bytes matchId; // 比赛ID
         address voter; // 投票人
-        VoteResult voteResult; // 投票结果
-        bytes32 votedResultHash; // 投票结果hash
+        UserVote userVote; // 投票结果
+        bytes signedUserVote; // 签名投票结果
         uint256 votedAt; // 投票时间
+        bytes merkleTreeRoot; // 投票结果MerkleTree的根节点
+        bytes[] merkleProof; // 投票结果MerkleTree的证明路径
     }
 
-    // 投票结果
-    struct VoteResult {
-        bytes32 matchId; // 比赛ID
+    // 用户投票
+    struct UserVote {
+        bytes matchId; // 比赛ID
         address voter; // 投票人
         address votedNFT; // 投票NFT地址
         uint256 votedTokenId; // 投票NFT的tokenId
+        uint256 voterNonce; // 投票人nonce
+        uint256 votedAt; // 投票时间
+    }
+
+    struct ApprovalData {
+        address owner;
+        address spender;
+        uint256 tokenId;
+        uint256 nonce;
+        uint256 deadline;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
+    struct NFTData {
+        address nftAddress;
+        uint256 tokenId;
+        uint256 amount;
+        uint256 stakedAt;
+        bool isFrozen;
+        address beneficiaryAddress;
+    }
+
+    enum NFTType {
+        ERC721,
+        ERC1155
     }
 }

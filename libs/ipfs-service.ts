@@ -2,17 +2,47 @@
 import axios from "axios";
 import fs from "fs";
 
-
 export class IpfsService {
     private auth: string
     private gateway: string
 
+    private proxy = undefined
     constructor() {
-        this.gateway = 'https://ipfs.infura.io:5001'
+        this.gateway = process.env.INFURA_IPFS_GATEWAY ?? 'https://ipfs.infura.io:5001'
 
         this.auth = 'Basic ' + Buffer.from(`${process.env.INFURA_IPFS_APP_ID}:${process.env.INFURA_IPFS_SECRET}`).toString('base64')
+
+        // this.proxy = {
+        //     // protocol: 'https',
+        //     host: '127.0.0.1',
+        //     port: 7890
+        // }
     }
 
+    async uploadFile(file_name: string): Promise<string> {
+        const action = '/api/v0/add'
+        const url = this.gateway + action
+        // console.log('url', url)
+        const formData = new FormData();
+
+        const content = fs.readFileSync(file_name)
+        formData.append("file", new Blob([Uint8Array.from(content)]));
+
+        try {
+            const response = await axios.post(url, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': this.auth
+                },
+                // proxy: this.proxy,
+            });
+            // console.log('response', response.data)
+
+            return 'ipfs://' + response.data['Hash']
+        } catch (e: any) {
+            throw new Error('status: ' + e.response.status + ', data: ' + e.response.data)
+        }
+    }
     /**
      * 上传目录下的所有文件到IPFS上，返回baseURI和所有文件的CID
      * @param path string 文件路径地址
@@ -41,6 +71,7 @@ export class IpfsService {
                 'Content-Type': 'multipart/form-data',
                 'Authorization': this.auth
             },
+            proxy: this.proxy
         });
         const data = response.data.split('\n').filter((item: string | null) => item != null && item !== "");
         const last_data = JSON.parse(data[data.length - 1])

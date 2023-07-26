@@ -10,6 +10,8 @@ interface ICreationNFT {
     event RemainingRewardToTreasury(address indexed treasury_address, uint256 amount);
     event AddedRewardUser(address new_user_address);
 
+    function nonces(address _user_address) external view returns (uint256);
+
     function distribution_policy() external view returns (IDistributionPolicyV1);
 //    function users_reward_data(address _user_address) external view returns (DistributionStructs.UserRewardData memory);
 
@@ -20,6 +22,7 @@ interface ICreationNFT {
 
 //    function setBaseURI(string calldata tokenURI) external;
     function claimReward() external;
+
 
     function baseURI() external view returns (string memory);
 

@@ -11,3 +11,4 @@ cache
 artifacts
 
 /resources/keystores/
+/data/vote_data_merkle_tree/

@@ -4,15 +4,64 @@ import {keccak256} from "ethereum-cryptography/keccak";
 import {hexToBytes} from "ethereum-cryptography/utils";
 import {defaultAbiCoder} from "@ethersproject/abi";
 import {Bytes} from "@ethersproject/bytes";
-import {Structs} from "../typechain-types/test/Test";
-import VoteResultStruct = Structs.VoteResultStruct;
+import {MatchStructs} from "../typechain-types/test/TestMerkleTree";
+import UserVoteStruct = MatchStructs.UserVoteStruct;
+
+export interface StandardMerkleTreeData<T extends any[]> {
+    format: 'standard-v1';
+    tree: string[];
+    values: {
+        value: T;
+        treeIndex: number;
+    }[];
+    leafEncoding: string[];
+}
 
 export class MerkleTreeService {
 
+    private last_tree_uri: string = ''
     public tree
 
     constructor(leaves: any[], encodeTypes: string[]) {
         this.tree = StandardMerkleTree.of(leaves, encodeTypes);
+    }
+
+    static load(data: string): MerkleTreeService {
+        const d = JSON.parse(data)
+        if (d.values === undefined) {
+            throw new Error('Invalid data')
+        }
+
+        const leaves: string[] = []
+
+        // d.values.reverse()
+        for (let i = 0; i < d.values.length; i++) {
+            leaves.push(d.values[i].value)
+        }
+
+        const types = d.leafEncoding
+
+        return new MerkleTreeService(leaves, types)
+    }
+
+    static leavesLoadFromJson(data: string): string[] {
+        const d = JSON.parse(data)
+        if (d.values === undefined) {
+            return []
+        }
+
+        const leaves: string[] = []
+
+        // d.values.reverse()
+        for (let i = 0; i < d.values.length; i++) {
+            leaves.push(d.values[i].value)
+        }
+
+        return leaves.length > 0 ? leaves : []
+    }
+
+    setLastTreeUri(uri: string): void {
+        this.last_tree_uri = uri
     }
 
     getRoot(): string {
@@ -31,34 +80,75 @@ export class MerkleTreeService {
         return this.tree.verify(leaf, proof)
     }
 
-    static generateVotedResultLeavesAndEncodeTypes = (vote_results: VoteResultStruct[]): [any[], string[]] => {
+    render(): string {
+        return this.tree.render()
+    }
+
+    dump(): any {
+        const d:any = {...this.tree.dump()}
+        d.last_tree_uri = this.last_tree_uri
+        return d
+    }
+
+    static generateUserVoteLeafAndEncodeTypes = (user_vote: UserVoteStruct): [any[], string[]] => {
+        const leaf = [
+            user_vote.matchId,
+            user_vote.voter,
+            user_vote.votedNFT,
+            user_vote.votedTokenId,
+            user_vote.voterNonce,
+            user_vote.votedAt
+        ]
+
+        const encode_types = [
+            'bytes',
+            'address',
+            'address',
+            'uint256',
+            'uint256',
+            'uint256'
+        ]
+
+        return [leaf, encode_types]
+    }
+
+    static generateUserVoteLeavesAndEncodeTypes = (user_results: UserVoteStruct[]): [any[], string[]] => {
         const leaves = []
-        for (let i = 0; i < vote_results.length; i++) {
-            const result = vote_results[i]
+        for (let i = 0; i < user_results.length; i++) {
+            const result = user_results[i]
             leaves.push(
                 [
                     result.matchId,
                     result.voter,
                     result.votedNFT,
-                    result.votedTokenId
+                    result.votedTokenId,
+                    result.voterNonce,
+                    result.votedAt
                 ]
             )
         }
         const encode_types = [
-            'bytes32',
+            'bytes',
             'address',
             'address',
+            'uint256',
+            'uint256',
             'uint256'
         ]
 
         return [leaves, encode_types]
     }
 
-    static generateVotedResultLeaf = (vote_results: VoteResultStruct): string => {
-        const [leaf_hash, t1] = MerkleTreeService.generateVotedResultLeavesAndEncodeTypes([vote_results])
-        return MerkleTreeService.bytesToHexString(keccak256(keccak256(hexToBytes(defaultAbiCoder.encode(t1, leaf_hash)))))
-
+    static generateVotedResultLeaf = (user_result: UserVoteStruct): string => {
+        const [leaf, t1] = MerkleTreeService.generateUserVoteLeafAndEncodeTypes(user_result)
+        // console.log("leaf", leaf, t1)
+        return MerkleTreeService.bytesToHexString(keccak256(keccak256(hexToBytes(defaultAbiCoder.encode(t1, leaf)))))
     }
+
+    static hashUserVote = (user_vote: UserVoteStruct): string => {
+        return MerkleTreeService.generateVotedResultLeaf(user_vote)
+    }
+
     /*static generateOrderLeaf = (order: OrderStruct): string => {
         const [leaf_hash, t1] = MerkleTreeService.generateOrderLeafAndEncodeTypes(order)
         return MerkleTreeService.bytesToHexString(keccak256(keccak256(hexToBytes(defaultAbiCoder.encode(t1, leaf_hash)))))

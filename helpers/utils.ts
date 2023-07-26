@@ -31,6 +31,9 @@ export const datetime_format = function (datetime: Date, fmt: string): string {
     return fmt
 }
 
+export const nowTimestamp = function (): number {
+    return Math.floor(Date.now() / 1000)
+}
 /**
  * 转换成大驼峰写法
  * @param str

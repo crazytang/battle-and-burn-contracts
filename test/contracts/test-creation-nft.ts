@@ -6,7 +6,7 @@ import {
     bnToNoPrecisionNumber, bnToNumber, getGasUsedFromReceipt, getLogFromReceipt,
     getTransactionOptions,
     numberToBn,
-    setDefaultGasOptions
+    setDefaultGasOptions, signMessageAndSplitByWallet, solidityAbiEncode, solidityAbiEncodePacked
 } from "../../helpers/contract/contract-utils";
 import {
     get_user_wallet_114a,
@@ -30,6 +30,9 @@ import {
 import RoyaltyDistributor_data from "../../contract-data/RoyaltyDistributor-data";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import TreasuryData from "../../contract-data/Treasury-data";
+import {keccak256} from "@ethersproject/keccak256";
+import {nowTimestamp} from "../../helpers/utils";
+import {solidityKeccak256} from "ethers/lib/utils";
 
 let tx: ContractTransaction
 let receipt: ContractReceipt
@@ -80,6 +83,16 @@ describe("Creation NFT testing", function () {
 
         const royaltyInfo = await creation_nft.royaltyInfo(0, numberToBn(100))
         console.log('royaltyInfo', royaltyInfo)
+
+        const interface_id = '0xc06dfe6c'
+        console.log('interface_id', interface_id)
+
+/*        const interface_id_in_contract = await creation_nft.getInterfaceId()
+        console.log('interface_id_in_contract', interface_id_in_contract)
+
+        const rs = await creation_nft.supportsInterface(interface_id)
+        console.log('rs', rs)
+        expect(rs).to.equal(true)*/
     })
 
     it('royaltyInfo', async () => {
@@ -136,6 +149,35 @@ describe("Creation NFT testing", function () {
         const user1_creation_nft = CreationNFT__factory.connect(creation_nft.address, user1_wallet)
         tx = await user1_creation_nft.transferFrom(user1_wallet.address, admin_wallet.address, token_id)
         await tx.wait()
+    })
+
+    it('test approveBySig()', async () => {
+        const tokenId = 0
+        const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
+        const owner = admin_wallet.address
+        const spender = user1_wallet.address
+        const nonce = await creation_nft.nonces(owner)
+        const deadline = nowTimestamp() + 60*3
+
+        const old_approved = await creation_nft.getApproved(tokenId)
+        console.log('old_approved', old_approved)
+        // expect(old_approved).to.equal(owner)
+
+        const hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, owner, spender, tokenId, nonce, deadline]))
+        console.log('hash', hash)
+
+        const signature = signMessageAndSplitByWallet(admin_wallet, hash)
+        const r = signature.r
+        const v = signature.v
+        const s = signature.s
+
+        tx = await creation_nft.approveBySig(owner, spender, tokenId, nonce, deadline, v, r, s, getTransactionOptions())
+        console.log('creation_nft.approveBySig() tx', tx.hash)
+        await tx.wait()
+
+        const new_approved = await creation_nft.getApproved(tokenId)
+        console.log('new_approved', new_approved)
+        expect(new_approved).to.equal(spender)
     })
 
     it('test setDistributionPolicy()', async () => {
