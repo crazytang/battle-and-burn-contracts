@@ -1,5 +1,5 @@
-// deployed_index: 16
-// deployed_at: 2023/07/26 14:28:40
+// deployed_index: 17
+// deployed_at: 2023/07/27 20:07:20
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattlePool_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const NFTBattlePool_data: ProxyContractData = {
     contract_name: 'NFTBattlePool',
     address: '0x1aC40Ee240D3B098F93351dDBA903999EB8961Af',
     proxy_address: '0x1aC40Ee240D3B098F93351dDBA903999EB8961Af',
-    target_address: '0xEeCBD157D6d7C65343Dff0615bc03f7079131391',
+    target_address: '0x4eBc0f42b6875475ea41DE7433395B322e4960A1',
     libraries: [],
     abi:  [
     {
@@ -594,6 +594,29 @@ const NFTBattlePool_data: ProxyContractData = {
         }
       ],
       "name": "stake",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner_address",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "stakeFrom",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -89,15 +89,18 @@ export const fetchToNFTData = (data: any): NFTData => {
 
 export interface MatchData {
     matchId: string
-    matchName: string
     matchStartTime: number
     matchEndTime: number
     voteCount: number
     voteArenaCount: number
     voteChallengeCount: number
+    arenaJPG: string
+    arenaJPGOwner: string
     arenaNFT: string
     arenaTokenId: number
     arenaOwnerSignature: string
+    challengeJPG: string
+    challengeJPGOwner: string
     challengeNFT: string
     challengeTokenId: number
     challengeOwnerSignature: string
@@ -109,15 +112,18 @@ export interface MatchData {
 export const fetchToMatchData = (data: any): MatchData => {
     return {
         matchId: data['matchId'],
-        matchName: data['matchName'],
         matchStartTime: bnToNoPrecisionNumber(data['matchStartTime']),
         matchEndTime: bnToNoPrecisionNumber(data['matchEndTime']),
         voteCount: bnToNoPrecisionNumber(data['voteCount']),
         voteArenaCount: bnToNoPrecisionNumber(data['voteArenaCount']),
         voteChallengeCount: bnToNoPrecisionNumber(data['voteChallengeCount']),
+        arenaJPG: data['arenaJPG'],
+        arenaJPGOwner: data['arenaJPGOwner'],
         arenaNFT: data['arenaNFT'],
         arenaTokenId: bnToNoPrecisionNumber(data['arenaTokenId']),
         arenaOwnerSignature: data['arenaOwnerSignature'],
+        challengeJPG: data['challengeJPG'],
+        challengeJPGOwner: data['challengeJPGOwner'],
         challengeNFT: data['challengeNFT'],
         challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
         challengeOwnerSignature: data['challengeOwnerSignature'],

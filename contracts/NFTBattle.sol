@@ -1,5 +1,5 @@
-// ##deployed index: 31
-// ##deployed at: 2023/07/26 10:41:44
+// ##deployed index: 50
+// ##deployed at: 2023/07/27 20:57:55
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -12,6 +12,9 @@ import "./dependencies/ECDSAUpgradeable.sol";
 import "./libraries/MatchStructs.sol";
 import "./interfaces/INFTBattlePool.sol";
 import "./interfaces/INFTBattle.sol";
+import "./interfaces/ICreationNFT.sol";
+import "./libraries/DistributionStructs.sol";
+import "./CreateNFTContract.sol";
 
 contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
     using ECDSAUpgradeable for bytes32;
@@ -30,11 +33,15 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     INFTBattlePool public nft_battle_pool;
 
+    CreateNFTContract public create_nft_contract;
+
     /// @notice This method is called by the proxy contract to initialize the contract.
-    function initialize() public initializer {
+    function initialize(address _create_nft_contract) public initializer {
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
+
+        create_nft_contract = CreateNFTContract(_create_nft_contract);
 
         minimum_vote_amount = 2;
     }
@@ -48,6 +55,13 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         emit SetNFTBattlePool(_nft_battle_pool);
     }
 
+    function setCreateNFTContract(address _create_nft_contract) external override whenNotPaused onlyOwner {
+        require(Address.isContract(_create_nft_contract), "NFTBattle: CreateNFTContract is not a contract");
+        create_nft_contract = CreateNFTContract(_create_nft_contract);
+
+        emit SetCreateNFTContract(_create_nft_contract);
+    }
+
     /// @notice Battle裁决
     /// @param _match_data 比赛数据
     /// @param _redeem_nft 是否赎回NFT
@@ -57,8 +71,23 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     /// @notice 系统裁决
     /// @param _match_data 比赛数据
-    function determineBySys(MatchStructs.MatchData calldata _match_data) external {
+    function determineBySys(MatchStructs.MatchData calldata _match_data) external override whenNotPaused nonReentrant {
         _determine(_match_data, false, msg.sender);
+    }
+
+    /// @notice Battle裁决，包含JPG
+    /// @param _match_data 比赛数据
+    /// @param _creation_nft_params 创建NFT的参数
+    /// @param _nft_redeem 是否赎回NFT
+    function determineIncludeJPG(MatchStructs.MatchData calldata _match_data, DistributionStructs.CreationNFTParams calldata _creation_nft_params, bool _nft_redeem) external override whenNotPaused nonReentrant {
+        _determineIncludeJPG(_match_data, _creation_nft_params, _nft_redeem, address(0));
+    }
+
+    /// @notice 系统裁决，包含JPG
+    /// @param _match_data 比赛数据
+    /// @param _creation_nft_params 创建NFT的参数
+    function determineIncludeJPGBySys(MatchStructs.MatchData calldata _match_data, DistributionStructs.CreationNFTParams calldata _creation_nft_params) external override whenNotPaused nonReentrant {
+        _determineIncludeJPG(_match_data, _creation_nft_params, false, msg.sender);
     }
 
     /// @notice hash比赛数据，用来签名
@@ -68,8 +97,8 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
     /// @param _nft_address NFT地址
     /// @param _token_id NFT tokenId
     /// @return hash值
-    function hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id) external override pure returns (bytes32) {
-        return _hashMatchData(_match_id, _match_start_time, _match_end_time, _nft_address, _token_id);
+    function hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external override pure returns (bytes32) {
+        return _hashMatchData(_match_id, _match_start_time, _match_end_time, _nft_address, _token_id, _jpg, _jpg_owner);
     }
 
     /// @notice 检查签名
@@ -150,23 +179,23 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         return _hash.recover(_signature) == _signer;
     }
 
-    function _hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id) private pure returns (bytes32) {
+    function _hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(
-            _match_id,_match_start_time,_match_end_time,_nft_address,_token_id
+            _match_id,_match_start_time,_match_end_time,_nft_address,_token_id, _jpg, _jpg_owner
         ))));
     }
 
     function _checkArenaAndChallengeSignatures(MatchStructs.MatchData calldata _match_data) private view returns (bool, bool) {
         bool _arena_sign = false;
-        bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.arenaNFT, _match_data.arenaTokenId);
-        address _arena_owner = nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
+        bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
+        address _arena_owner = _match_data.arenaJPGOwner != address(0) ? _match_data.arenaJPGOwner : nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
         if (_checkSign(_arena_hash, _arena_owner, _match_data.arenaOwnerSignature)) {
             _arena_sign = true;
         }
 
         bool _challenge_sign = false;
-        bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId);
-        address _challenge_owner = nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
+        bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
+        address _challenge_owner = _match_data.challengeJPGOwner != address(0) ? _match_data.challengeJPGOwner : nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
         if (_checkSign(_challenge_hash, _challenge_owner, _match_data.challengeOwnerSignature)) {
             _challenge_sign = true;
         }
@@ -175,6 +204,151 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
     }
 
     function _determine(MatchStructs.MatchData calldata _match_data, bool _redeem_nft, address _executor) private {
+//        require(_match_data.matchId.length > 0, "NFTBattle: match_id is empty");
+//        require(_match_data.matchEndTime >= block.timestamp, "NFTBattle: matchEndTime is less than current time");
+//        require(_match_data.voteCount >= minimum_vote_amount, "NFTBattle: voteCount is less than minimum_vote_amount");
+//        require(_match_data.voteArenaCount != _match_data.voteChallengeCount, "NFTBattle: voteArenaCount is equal to voteChallengeCount");
+//        require(_match_data.merkleTreeRoot.length > 0, "NFTBattle: merkleTreeRoot can not be empty");
+
+        _checkMatchData(_match_data);
+
+        address _loser_nft_address;
+        uint256 _loser_nft_token_id;
+
+        address _winner_nft_address;
+        uint256 _winner_nft_token_id;
+
+        bool _arena_win = _match_data.voteArenaCount > _match_data.voteChallengeCount;
+        if (_arena_win) {
+            _loser_nft_address = _match_data.challengeNFT;
+            _loser_nft_token_id = _match_data.challengeTokenId;
+            _winner_nft_address = _match_data.arenaNFT;
+            _winner_nft_token_id = _match_data.arenaTokenId;
+        } else {
+            _loser_nft_address = _match_data.arenaNFT;
+            _loser_nft_token_id = _match_data.arenaTokenId;
+            _winner_nft_address = _match_data.challengeNFT;
+            _winner_nft_token_id = _match_data.challengeTokenId;
+        }
+
+        address _winner_address = nft_battle_pool.getNFTOwner(_winner_nft_address, _winner_nft_token_id);
+
+        MatchStructs.NFTData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _winner_nft_address, _winner_nft_token_id);
+        require(_winner_nft_data.amount > 0, "NFTBattle: winner nft is not staked");
+        require(_winner_nft_data.isFrozen == false, "NFTBattle: winner nft is frozen");
+
+        // burn loser's nft
+        address _loser_address = nft_battle_pool.getNFTOwner(_loser_nft_address, _loser_nft_token_id);
+        nft_battle_pool.burnNFT(_loser_address, _loser_nft_address, _loser_nft_token_id);
+
+        // update matches result data
+//        matches[_match_data.matchId] = _match_data;
+//        matches[_match_data.matchId].burnedAt = block.timestamp;
+//
+//        match_ids.push(_match_data.matchId);
+//        bytes32 _nft_winner_id = _getNFTId(_winner_nft_address, _winner_nft_token_id);
+//        nft_won_matches[_nft_winner_id].push(_match_data.matchId);
+//
+//        // update nft ko score
+//        bytes32 _nft_loser_id = _getNFTId(_loser_nft_address, _loser_nft_token_id);
+//        nft_ko_scores[_nft_winner_id] = nft_ko_scores[_nft_loser_id] + 1;
+
+        _updateMatchData(_match_data, _winner_nft_address, _winner_nft_token_id, _loser_nft_address, _loser_nft_token_id);
+
+        emit Determined(_match_data.matchId, _winner_nft_address, _winner_nft_token_id, _loser_nft_address, _loser_nft_token_id, nft_battle_pool.burn_to_address());
+
+        // 由系统执行的时候，需要冻结赢家的NFT
+        if (_executor != address(0)) {
+            nft_battle_pool.freezeNFT(_winner_address, _winner_nft_address, _winner_nft_token_id, msg.sender);
+            return;
+        }
+
+        // redeem won nft
+        if (_redeem_nft) {
+            nft_battle_pool.redeemToOwner(_winner_address, _winner_nft_address, _winner_nft_token_id);
+        }
+
+    }
+
+    function _determineIncludeJPG(MatchStructs.MatchData calldata _match_data, DistributionStructs.CreationNFTParams calldata _creation_nft_params, bool _nft_redeem, address _executor) private {
+//        require(_match_data.matchId.length > 0, "NFTBattle: match_id is empty");
+//        require(_match_data.matchEndTime >= block.timestamp, "NFTBattle: matchEndTime is less than current time");
+//        require(_match_data.voteCount >= minimum_vote_amount, "NFTBattle: voteCount is less than minimum_vote_amount");
+//        require(_match_data.voteArenaCount != _match_data.voteChallengeCount, "NFTBattle: voteArenaCount is equal to voteChallengeCount");
+//        require(_match_data.merkleTreeRoot.length > 0, "NFTBattle: merkleTreeRoot can not be empty");
+        _checkMatchData(_match_data);
+
+        DistributionStructs.DetermineIncludeJPGVars memory vars;
+        bool _arena_win = _match_data.voteArenaCount > _match_data.voteChallengeCount;
+        if (_arena_win) {
+            if (_match_data.arenaJPGOwner != address(0)) {
+                vars.winner_address = _match_data.arenaJPGOwner;
+                vars.winner_is_jpg = true;
+                vars.winner_jpg = _match_data.arenaJPG;
+            } else {
+                vars.winner_address = nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
+                vars.winner_nft_address = _match_data.arenaNFT;
+                vars.winner_nft_token_id = _match_data.arenaTokenId;
+            }
+
+            if (_match_data.challengeJPGOwner != address(0)) {
+                vars.loser_is_jpg = true;
+                vars.loser_jpg = _match_data.challengeJPG;
+            } else {
+                vars.loser_address = nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
+                vars.loser_nft_address = _match_data.challengeNFT;
+                vars.loser_nft_token_id = _match_data.challengeTokenId;
+            }
+        } else {
+            if (_match_data.challengeJPGOwner != address(0)) {
+                vars.winner_address = _match_data.challengeJPGOwner;
+                vars.winner_is_jpg = true;
+                vars.winner_jpg = _match_data.challengeJPG;
+            } else {
+                vars.winner_address = nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
+                vars.winner_nft_address = _match_data.challengeNFT;
+                vars.winner_nft_token_id = _match_data.challengeTokenId;
+            }
+
+            if (_match_data.arenaJPGOwner != address(0)) {
+                vars.loser_is_jpg = true;
+                vars.loser_jpg = _match_data.arenaJPG;
+            } else {
+                vars.loser_address = nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
+                vars.loser_nft_address = _match_data.arenaNFT;
+                vars.loser_nft_token_id = _match_data.arenaTokenId;
+            }
+        }
+
+        // deploy creation nft
+        if (vars.winner_is_jpg) {
+            require(_creation_nft_params.creator != address(0) && bytes(_creation_nft_params.name).length > 0 && bytes(_creation_nft_params.symbol).length > 0 && _creation_nft_params.distribution_policy_address != address(0), "NFTBattle: _creation_nft_params is error");
+//            ICreationNFT _nft = _jpgToNFT(_creation_nft_params);
+            ICreationNFT _nft = create_nft_contract.jpgToNFT(_creation_nft_params, address(nft_battle_pool), _nft_redeem);
+            vars.winner_nft_address = address(_nft);
+            vars.winner_nft_token_id = 0;
+        }
+
+        if (!vars.loser_is_jpg) {
+            nft_battle_pool.burnNFT(vars.loser_address, vars.loser_nft_address, vars.loser_nft_token_id);
+        }
+
+        _updateMatchData(_match_data, vars.winner_nft_address, vars.winner_nft_token_id, vars.loser_nft_address, vars.loser_nft_token_id);
+
+        emit DeterminedIncludeJPG(_match_data.matchId, vars.winner_nft_address, vars.winner_nft_token_id, vars.winner_jpg, vars.winner_address, vars.loser_nft_address, vars.loser_nft_token_id, vars.loser_jpg, vars.loser_address, nft_battle_pool.burn_to_address());
+
+        // 由系统执行的时候，需要冻结赢家的NFT
+        if (_executor != address(0)) {
+            nft_battle_pool.freezeNFT(vars.winner_address, vars.winner_nft_address, vars.winner_nft_token_id, msg.sender);
+            return;
+        }
+
+        if (_nft_redeem && IERC721(vars.winner_nft_address).ownerOf(vars.winner_nft_token_id) != vars.winner_address) {
+            nft_battle_pool.redeemToOwner(vars.winner_address, vars.winner_nft_address, vars.winner_nft_token_id);
+        }
+    }
+
+    function _checkMatchData(MatchStructs.MatchData calldata _match_data) private view returns (bool) {
         require(_match_data.matchId.length > 0, "NFTBattle: match_id is empty");
         require(_match_data.matchEndTime >= block.timestamp, "NFTBattle: matchEndTime is less than current time");
         require(_match_data.voteCount >= minimum_vote_amount, "NFTBattle: voteCount is less than minimum_vote_amount");
@@ -185,57 +359,35 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         require(_arena_sign, "NFTBattle: arenaOwnerSignature is invalid");
         require(_challenge_sign, "NFTBattle: challengeOwnerSignature is invalid");
 
+        return true;
+    }
+
+    function _updateMatchData(MatchStructs.MatchData calldata _match_data, address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {
+
+        // update matches result data
         matches[_match_data.matchId] = _match_data;
         matches[_match_data.matchId].burnedAt = block.timestamp;
 
-        address _burn_nft_address;
-        uint256 _burn_nft_token_id;
-
-        address _won_nft_address;
-        uint256 _won_nft_token_id;
-
-        bool _arena_win = _match_data.voteArenaCount > _match_data.voteChallengeCount;
-        if (_arena_win) {
-            _burn_nft_address = _match_data.challengeNFT;
-            _burn_nft_token_id = _match_data.challengeTokenId;
-            _won_nft_address = _match_data.arenaNFT;
-            _won_nft_token_id = _match_data.arenaTokenId;
+        // After JPG to NFT, we need to update the new NFT address and tokenId to match_data
+        if (_match_data.voteArenaCount > _match_data.voteChallengeCount) {
+            if (_match_data.arenaJPGOwner != address(0)) {
+                matches[_match_data.matchId].arenaNFT = _winner_nft_address;
+                matches[_match_data.matchId].arenaTokenId = _winner_nft_token_id;
+            }
         } else {
-            _burn_nft_address = _match_data.arenaNFT;
-            _burn_nft_token_id = _match_data.arenaTokenId;
-            _won_nft_address = _match_data.challengeNFT;
-            _won_nft_token_id = _match_data.challengeTokenId;
+            if (_match_data.challengeJPGOwner != address(0)) {
+                matches[_match_data.matchId].challengeNFT = _winner_nft_address;
+                matches[_match_data.matchId].challengeTokenId = _winner_nft_token_id;
+            }
         }
 
-        address _winner_address = nft_battle_pool.getNFTOwner(_won_nft_address, _won_nft_token_id);
-
-        MatchStructs.NFTData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _won_nft_address, _won_nft_token_id);
-        require(_winner_nft_data.amount > 0, "NFTBattle: winner nft is not staked");
-        require(_winner_nft_data.isFrozen == false, "NFTBattle: winner nft is frozen");
-
-        // burn loser's nft
-        address _loser_address = nft_battle_pool.getNFTOwner(_burn_nft_address, _burn_nft_token_id);
-        nft_battle_pool.burnNFT(_loser_address, _burn_nft_address, _burn_nft_token_id);
-
-        // update matches result data
         match_ids.push(_match_data.matchId);
-        bytes32 _nft_winner_id = _getNFTId(_won_nft_address, _won_nft_token_id);
+
+        bytes32 _nft_winner_id = _getNFTId(_winner_nft_address, _winner_nft_token_id);
         nft_won_matches[_nft_winner_id].push(_match_data.matchId);
 
         // update nft ko score
-        bytes32 _nft_loser_id = _getNFTId(_burn_nft_address, _burn_nft_token_id);
+        bytes32 _nft_loser_id = _getNFTId(_loser_nft_address, _loser_nft_token_id);
         nft_ko_scores[_nft_winner_id] = nft_ko_scores[_nft_loser_id] + 1;
-
-        emit Determined(_match_data.matchId, _won_nft_address, _won_nft_token_id, _burn_nft_address, _burn_nft_token_id, nft_battle_pool.burn_to_address());
-
-        // redeem won nft
-        if (_redeem_nft) {
-            nft_battle_pool.redeemToOwner(_winner_address, _won_nft_address, _won_nft_token_id);
-        }
-
-        // 由系统执行的时候，需要冻结赢家的NFT
-        if (_executor != address(0)) {
-            nft_battle_pool.freezeNFT(_winner_address, _won_nft_address, _won_nft_token_id, msg.sender);
-        }
     }
 }

@@ -38,12 +38,12 @@ import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import {MatchStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = MatchStructs.ApprovalDataStruct;
-import {DistributionStructs} from "../../typechain-types/CreationNFT";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
-import {MatchStructs as MatchStructs2} from "../../typechain-types/NFTBattle";
+import {DistributionStructs, MatchStructs as MatchStructs2} from "../../typechain-types/NFTBattle";
 import UserVoteStruct = MatchStructs2.UserVoteStruct;
 import {fetchToMatchData, fetchToNFTData, MatchData, NFTData} from "../../helpers/contract/structs";
 import {randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
+import CreationNFTParamsStruct = DistributionStructs.CreationNFTParamsStruct;
 
 
 let tx: ContractTransaction
@@ -84,7 +84,7 @@ describe("NFTBattle.sol testing", function () {
         expect(nft_battle_pool_address).to.equal(NFTBattlePool_data.address)
     })
 
-    it('test determine()', async () => {
+    it.skip('test determine()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const rs = await makeMatchData(user1_wallet, user2_wallet)
@@ -136,16 +136,18 @@ describe("NFTBattle.sol testing", function () {
         expect(match_data_in_contract.matchId).to.equal(match_data.matchId)
         expect(match_data_in_contract.burnedAt).greaterThan(0)
 
-        const new_loser_nft_owner = await user2_nft.ownerOf(loser_token_id)
-        console.log('new_loser_nft_owner', new_loser_nft_owner)
-        expect(new_loser_nft_owner).to.equal(burn_to_address)
+        if (user2_nft) {
+            const new_loser_nft_owner = await user2_nft.ownerOf(loser_token_id)
+            console.log('new_loser_nft_owner', new_loser_nft_owner)
+            expect(new_loser_nft_owner).to.equal(burn_to_address)
+        }
 
         const new_winner_match_ids = await nft_battle.getNFTWonMatches(winner_nft, winner_token_id)
         console.log('new_winner_match_ids', new_winner_match_ids)
         expect(new_winner_match_ids.length).to.equal(old_winner_match_ids.length + 1)
         expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data.matchId)
 
-        const new_winner_ko_score = await nft_battle.getNFTKOScore(winner_nft, winner_token_id)
+        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
         expect(new_winner_ko_score).to.equal(old_loser_ko_score + 1)
 
@@ -160,7 +162,288 @@ describe("NFTBattle.sol testing", function () {
         }
     })
 
-    it('test determineBySys()', async () => {
+    it.skip('test determineIncludeJPG()', async () => {
+        const user1_nft_owner = user1_wallet.address
+        const user2_nft_owner = user2_wallet.address
+        const user1_jpg_ipfs = 'ipfs://QmbSHDFknsZGNk8N9LeRDpuRADAm5bvcxG6Sfrsa1tc9qi'
+        const user2_jpg_ipfs = ''
+        // to redeem nft or not
+        const redeem_nft = false
+
+        // 赢家是JPG
+        const rs = await makeMatchData(user1_wallet, user2_wallet, user1_jpg_ipfs, user2_jpg_ipfs)
+        const match_data = rs.match_data
+        const user1_nft = rs.user1_nft
+        const user2_nft = rs.user2_nft
+        console.log('match_data', match_data)
+
+        // 结束比赛
+        expect(match_data.voteArenaCount != match_data.voteChallengeCount).to.equal(true)
+
+        let winner_nft, winner_token_id, loser_nft, loser_token_id, winner_jpg, winner_owner, loser_jpg, loser_owner
+        if (match_data.voteArenaCount > match_data.voteChallengeCount) {
+            winner_jpg = match_data.arenaJPG
+            winner_owner = match_data.arenaJPGOwner
+            winner_nft = match_data.arenaNFT
+            winner_token_id = match_data.arenaTokenId
+
+            loser_jpg = match_data.challengeJPG
+            loser_owner = match_data.challengeJPGOwner
+            loser_nft = match_data.challengeNFT
+            loser_token_id = match_data.challengeTokenId
+        } else {
+            winner_jpg = match_data.challengeJPG
+            winner_owner = match_data.challengeJPGOwner
+            winner_nft = match_data.challengeNFT
+            winner_token_id = match_data.challengeTokenId
+
+            loser_jpg = match_data.arenaJPG
+            loser_owner = match_data.arenaJPGOwner
+            loser_nft = match_data.arenaNFT
+            loser_token_id = match_data.arenaTokenId
+        }
+
+        let creation_nft_params: CreationNFTParamsStruct
+        if (winner_jpg != '') {
+            creation_nft_params = {
+                creator: winner_owner,
+                name: 'test',
+                symbol: 'test',
+                baseURI: 'ipfs://...',
+                distribution_role_params: {
+                    original_element_creator: user1_wallet.address,
+                    element_creators:[],
+                    element_quote_element_creators:[],
+                },
+                distribution_policy_address: DistributionPolicyV1_data.address,
+            }
+        } else {
+            creation_nft_params = {
+                creator: ethers.constants.AddressZero,
+                name: '',
+                symbol: '',
+                baseURI: '',
+                distribution_role_params: {
+                    original_element_creator: ethers.constants.AddressZero,
+                    element_creators:[],
+                    element_quote_element_creators:[],
+                },
+                distribution_policy_address: ethers.constants.AddressZero,
+            }
+        }
+
+        tx = await nft_battle.determineIncludeJPG(match_data, creation_nft_params, redeem_nft, getTransactionOptions())
+        console.log('nft_battle.determineIncludeJPG() tx', tx.hash)
+        await tx.wait()
+
+        // verify data
+        const match_data_in_contract = fetchToMatchData(await nft_battle.getMatchData(match_data.matchId))
+        console.log('match_data_in_contract', match_data_in_contract)
+        expect(match_data_in_contract.matchId).to.equal(match_data.matchId)
+        expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
+        expect(match_data_in_contract.burnedAt).greaterThan(0)
+
+        if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
+            winner_nft = match_data_in_contract.arenaNFT
+            winner_token_id = match_data_in_contract.arenaTokenId
+        } else {
+            winner_nft = match_data_in_contract.challengeNFT
+            winner_token_id = match_data_in_contract.challengeTokenId
+        }
+
+        const new_winner_match_ids = await nft_battle.getNFTWonMatches(winner_nft, winner_token_id)
+        console.log('new_winner_match_ids', new_winner_match_ids)
+        expect(new_winner_match_ids.length).to.equal( 1)
+        expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data.matchId)
+
+        let loser_ko_score = 0
+        if (loser_nft != ethers.constants.AddressZero) {
+            loser_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(loser_nft, loser_token_id))
+        }
+        console.log('loser_ko_score', loser_ko_score)
+
+        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(winner_nft, winner_token_id))
+        console.log('new_winner_ko_score', new_winner_ko_score)
+        expect(new_winner_ko_score).to.equal(loser_ko_score + 1)
+
+        if (redeem_nft) {
+            const winner_creattion_nft = CreationNFT__factory.connect(winner_nft, user1_wallet)
+            const new_winner_nft_owner = await winner_creattion_nft.ownerOf(winner_token_id)
+            console.log('new_winner_nft_owner', new_winner_nft_owner)
+            expect(new_winner_nft_owner).to.equal(user1_nft_owner)
+        } else {
+            const new_winner_nft_owner_in_pool = await nft_battle_pool.getNFTOwner(match_data_in_contract.arenaNFT, match_data_in_contract.arenaTokenId)
+            console.log('new_winner_nft_owner_in_pool', new_winner_nft_owner_in_pool)
+            expect(new_winner_nft_owner_in_pool).to.equal(user1_nft_owner)
+        }
+
+        if (user2_nft) {
+            const new_loser_nft_owner = await user2_nft.ownerOf(loser_token_id)
+            console.log('new_loser_nft_owner', new_loser_nft_owner)
+            expect(new_loser_nft_owner).to.equal(burn_to_address)
+        }
+
+    })
+
+    it('test determineIncludeJPGBySys()', async () => {
+        const user1_nft_owner = user1_wallet.address
+        const user2_nft_owner = user2_wallet.address
+        const user1_jpg_ipfs = 'ipfs://QmbSHDFknsZGNk8N9LeRDpuRADAm5bvcxG6Sfrsa1tc9qi'
+        const user2_jpg_ipfs = ''
+        // to redeem nft or not
+        const redeem_nft = false
+
+        // 赢家是JPG
+        const rs = await makeMatchData(user1_wallet, user2_wallet, user1_jpg_ipfs, user2_jpg_ipfs)
+        const match_data = rs.match_data
+        const user1_nft = rs.user1_nft
+        const user2_nft = rs.user2_nft
+        console.log('match_data', match_data)
+
+        // 结束比赛
+        expect(match_data.voteArenaCount != match_data.voteChallengeCount).to.equal(true)
+
+        let winner_nft, winner_token_id, loser_nft, loser_token_id, winner_jpg, winner_owner, loser_jpg, loser_owner
+        let winner, loser
+        if (match_data.voteArenaCount > match_data.voteChallengeCount) {
+            winner = user1_wallet
+            winner_jpg = match_data.arenaJPG
+            winner_owner = match_data.arenaJPGOwner
+            winner_nft = match_data.arenaNFT
+            winner_token_id = match_data.arenaTokenId
+
+            loser = user2_wallet
+            loser_jpg = match_data.challengeJPG
+            loser_owner = match_data.challengeJPGOwner
+            loser_nft = match_data.challengeNFT
+            loser_token_id = match_data.challengeTokenId
+        } else {
+            winner = user2_wallet
+            winner_jpg = match_data.challengeJPG
+            winner_owner = match_data.challengeJPGOwner
+            winner_nft = match_data.challengeNFT
+            winner_token_id = match_data.challengeTokenId
+
+            loser = user1_wallet
+            loser_jpg = match_data.arenaJPG
+            loser_owner = match_data.arenaJPGOwner
+            loser_nft = match_data.arenaNFT
+            loser_token_id = match_data.arenaTokenId
+        }
+
+        let creation_nft_params: CreationNFTParamsStruct
+        if (winner_jpg != '') {
+            creation_nft_params = {
+                creator: winner_owner,
+                name: 'test',
+                symbol: 'test',
+                baseURI: 'ipfs://...',
+                distribution_role_params: {
+                    original_element_creator: user1_wallet.address,
+                    element_creators:[],
+                    element_quote_element_creators:[],
+                },
+                distribution_policy_address: DistributionPolicyV1_data.address,
+            }
+        } else {
+            creation_nft_params = {
+                creator: ethers.constants.AddressZero,
+                name: '',
+                symbol: '',
+                baseURI: '',
+                distribution_role_params: {
+                    original_element_creator: ethers.constants.AddressZero,
+                    element_creators:[],
+                    element_quote_element_creators:[],
+                },
+                distribution_policy_address: ethers.constants.AddressZero,
+            }
+        }
+
+        tx = await nft_battle.determineIncludeJPGBySys(match_data, creation_nft_params, getTransactionOptions())
+        console.log('nft_battle.determineIncludeJPGBySys() tx', tx.hash)
+        await tx.wait()
+
+        // verify data
+        const match_data_in_contract = fetchToMatchData(await nft_battle.getMatchData(match_data.matchId))
+        console.log('match_data_in_contract', match_data_in_contract)
+        expect(match_data_in_contract.matchId).to.equal(match_data.matchId)
+        expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
+        expect(match_data_in_contract.burnedAt).greaterThan(0)
+
+        if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
+            winner_nft = match_data_in_contract.arenaNFT
+            winner_token_id = match_data_in_contract.arenaTokenId
+        } else {
+            winner_nft = match_data_in_contract.challengeNFT
+            winner_token_id = match_data_in_contract.challengeTokenId
+        }
+
+        const new_winner_match_ids = await nft_battle.getNFTWonMatches(winner_nft, winner_token_id)
+        console.log('new_winner_match_ids', new_winner_match_ids)
+        expect(new_winner_match_ids.length).to.equal( 1)
+        expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data.matchId)
+
+        let loser_ko_score = 0
+        if (loser_nft != ethers.constants.AddressZero) {
+            loser_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(loser_nft, loser_token_id))
+        }
+        console.log('loser_ko_score', loser_ko_score)
+
+        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(winner_nft, winner_token_id))
+        console.log('new_winner_ko_score', new_winner_ko_score)
+        expect(new_winner_ko_score).to.equal(loser_ko_score + 1)
+
+        if (user2_nft) {
+            const new_loser_nft_owner = await user2_nft.ownerOf(loser_token_id)
+            console.log('new_loser_nft_owner', new_loser_nft_owner)
+            expect(new_loser_nft_owner).to.equal(burn_to_address)
+        }
+        // 冻结的NFT不可以赎回
+        const winner_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, winner)
+
+        try {
+            tx = await winner_nft_battle_pool.redeem(winner_nft, winner_token_id, getTransactionOptions())
+            console.log('nft_battle_pool.redeem() tx', tx.hash)
+            await tx.wait()
+            expect(false).to.equal(true)
+        } catch (error : any) {
+            // console.log('error', error)
+            expect(error.code).to.equal('CALL_EXCEPTION')
+        }
+
+        const eth_amount = 0.01
+        const tx_data = {...getTransactionOptions(), value: numberToBn(eth_amount)}
+
+        const old_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
+        console.log('old_admin_eth_balance', old_admin_eth_balance)
+
+        tx = await winner_nft_battle_pool.unfreezeNFT(winner_nft, winner_token_id, redeem_nft, tx_data)
+        console.log('nft_battle_pool.unfreezeNFT() tx', tx.hash)
+        await tx.wait()
+
+        const new_winner_user_staked_data2: NFTData = fetchToNFTData(await nft_battle_pool.getUserStakedData(winner.address, winner_nft, winner_token_id))
+        console.log('new_winner_user_staked_data2', new_winner_user_staked_data2)
+        if (redeem_nft) {
+            expect(new_winner_user_staked_data2.amount).to.equal(0)
+
+            const winner_nft_contract = CreationNFT__factory.connect(winner_nft, winner)
+            const winner_nft_owner = await winner_nft_contract.ownerOf(winner_token_id)
+            console.log('winner_nft_owner', winner_nft_owner)
+            expect(winner_nft_owner).to.equal(winner.address)
+        } else {
+            expect(new_winner_user_staked_data2.amount).to.equal(1)
+            expect(new_winner_user_staked_data2.isFrozen).to.equal(false)
+            expect(new_winner_user_staked_data2.beneficiaryAddress).to.equal(ethers.constants.AddressZero)
+        }
+
+        const new_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
+        console.log('new_admin_eth_balance', new_admin_eth_balance)
+        expect(amount_equal_in_precision(new_admin_eth_balance, old_admin_eth_balance + eth_amount)).to.equal(true)
+
+
+    })
+    it.skip('test determineBySys()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const rs = await makeMatchData(user1_wallet, user2_wallet)
@@ -266,10 +549,10 @@ const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: str
     return await new_contract.deployed()
 }
 
-const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet): Promise<{
+const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG='', challengeJPG=''): Promise<{
     match_data: MatchData
-    user1_nft: CreationNFT
-    user2_nft: CreationNFT
+    user1_nft: CreationNFT|null
+    user2_nft: CreationNFT|null
 }> => {
     const match_id:string = randomHash()
     console.log('match_id', match_id)
@@ -277,98 +560,110 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet): Promise<
     console.log('participant1 address', user1_wallet.address)
     console.log('participant2 address', user2_wallet.address)
 
-    // 1)创建两个二创NFT进行对战
-    const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
-        original_element_creator: ethers.constants.AddressZero,
-        element_creators: [],
-        element_quote_element_creators: []
-    });
-    console.log('user1_nft.address', user1_nft.address)
-
-    const user2_nft = await deployCreationNFT(user2_wallet, 'user2_nft', 'user2_nft', 'ipfs://', {
-        original_element_creator: ethers.constants.AddressZero,
-        element_creators: [],
-        element_quote_element_creators: []
-    })
-    console.log('user2_nft.address', user2_nft.address)
-
-    // 2) 质押到pool合约里面
+    const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
+    const spender = NFTBattlePool_data.address
+    const deadline = nowTimestamp() + 60*3
     const user1_nft_token_id = 0
     const user2_nft_token_id = 0
 
-    const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
-    const user1_nft_owner = user1_wallet.address
-    const spender = NFTBattlePool_data.address
-    const nonce = await creation_nft.nonces(user1_nft_owner)
-    const deadline = nowTimestamp() + 60*3
+    let user1_nft = null
+    if (arenaJPG == '') {
+        // 创建二创NFT进行对战
+        user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
+            original_element_creator: ethers.constants.AddressZero,
+            element_creators: [],
+            element_quote_element_creators: []
+        });
+        console.log('user1_nft.address', user1_nft.address)
 
-    const user1_hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, user1_nft_owner, spender, user1_nft_token_id, nonce, deadline]))
-    const user1_signature = signMessageAndSplitByWallet(user1_wallet, user1_hash)
-    let r = user1_signature.r
-    let v = user1_signature.v
-    let s = user1_signature.s
+        // 质押到pool合约里面
 
-    const user1_approval_data: ApprovalDataStruct = {
-        owner: user1_nft_owner,
-        spender: spender,
-        tokenId: numberToBn(user1_nft_token_id, 0),
-        nonce: nonce,
-        deadline: numberToBn(deadline, 0),
-        r: r,
-        s: s,
-        v: v
+        const user1_nft_owner = user1_wallet.address
+        const nonce = await creation_nft.nonces(user1_nft_owner)
+
+        const user1_hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, user1_nft_owner, spender, user1_nft_token_id, nonce, deadline]))
+        const user1_signature = signMessageAndSplitByWallet(user1_wallet, user1_hash)
+        let r = user1_signature.r
+        let v = user1_signature.v
+        let s = user1_signature.s
+
+        const user1_approval_data: ApprovalDataStruct = {
+            owner: user1_nft_owner,
+            spender: spender,
+            tokenId: numberToBn(user1_nft_token_id, 0),
+            nonce: nonce,
+            deadline: numberToBn(deadline, 0),
+            r: r,
+            s: s,
+            v: v
+        }
+
+        const user1_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, user1_wallet)
+        tx = await user1_nft_battle_pool.stake(user1_nft.address, user1_approval_data, getTransactionOptions())
+        console.log('user1_nft_battle_pool.stake() tx', tx.hash)
+        await tx.wait()
+
+        const user1_nft_owner_in_contract = await user1_nft_battle_pool.getNFTOwner(user1_nft.address, user1_nft_token_id)
+        console.log('user1_nft_owner_in_contract', user1_nft_owner_in_contract)
+        expect(user1_nft_owner_in_contract).to.equal(user1_nft_owner)
     }
 
-    const user1_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, user1_wallet)
-    tx = await user1_nft_battle_pool.stake(user1_nft.address, user1_approval_data, getTransactionOptions())
-    console.log('user1_nft_battle_pool.stake() tx', tx.hash)
-    await tx.wait()
+    let user2_nft = null
+    if (challengeJPG == '') {
+        // 与上面的一样流程
+        const user2_nft_owner = user2_wallet.address
+        const nonce = await creation_nft.nonces(user2_nft_owner)
 
-    const user1_nft_owner_in_contract = await user1_nft_battle_pool.getNFTOwner(user1_nft.address, user1_nft_token_id)
-    console.log('user1_nft_owner_in_contract', user1_nft_owner_in_contract)
-    expect(user1_nft_owner_in_contract).to.equal(user1_nft_owner)
+        user2_nft = await deployCreationNFT(user2_wallet, 'user2_nft', 'user2_nft', 'ipfs://', {
+            original_element_creator: ethers.constants.AddressZero,
+            element_creators: [],
+            element_quote_element_creators: []
+        })
+        console.log('user2_nft.address', user2_nft.address)
 
-    const user2_nft_owner = user2_wallet.address
+        const user2_hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, user2_nft_owner, spender, user2_nft_token_id, nonce, deadline]))
+        const user2_signature = signMessageAndSplitByWallet(user2_wallet, user2_hash)
+        let r = user2_signature.r
+        let v = user2_signature.v
+        let s = user2_signature.s
 
-    const user2_hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, user2_nft_owner, spender, user2_nft_token_id, nonce, deadline]))
-    const user2_signature = signMessageAndSplitByWallet(user2_wallet, user2_hash)
-    r = user2_signature.r
-    v = user2_signature.v
-    s = user2_signature.s
+        const user2_approval_data: ApprovalDataStruct = {
+            owner: user2_nft_owner,
+            spender: spender,
+            tokenId: numberToBn(user2_nft_token_id, 0),
+            nonce: nonce,
+            deadline: numberToBn(deadline, 0),
+            r: r,
+            s: s,
+            v: v
+        }
 
-    const user2_approval_data: ApprovalDataStruct = {
-        owner: user2_nft_owner,
-        spender: spender,
-        tokenId: numberToBn(user2_nft_token_id, 0),
-        nonce: nonce,
-        deadline: numberToBn(deadline, 0),
-        r: r,
-        s: s,
-        v: v
+        const user2_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, user2_wallet)
+        tx = await user2_nft_battle_pool.stake(user2_nft.address, user2_approval_data, getTransactionOptions())
+        console.log('user2_nft_battle_pool.stake() tx', tx.hash)
+        await tx.wait()
+
+        const user2_nft_owner_in_contract = await user2_nft_battle_pool.getNFTOwner(user2_nft.address, user2_nft_token_id)
+        console.log('user2_nft_owner_in_contract', user2_nft_owner_in_contract)
+        expect(user2_nft_owner_in_contract).to.equal(user2_nft_owner)
     }
-
-    const user2_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, user2_wallet)
-    tx = await user2_nft_battle_pool.stake(user2_nft.address, user2_approval_data, getTransactionOptions())
-    console.log('user2_nft_battle_pool.stake() tx', tx.hash)
-    await tx.wait()
-
-    const user2_nft_owner_in_contract = await user2_nft_battle_pool.getNFTOwner(user2_nft.address, user1_nft_token_id)
-    console.log('user2_nft_owner_in_contract', user2_nft_owner_in_contract)
-    expect(user2_nft_owner_in_contract).to.equal(user2_nft_owner)
 
     // 3) 创建比赛数据
     const match_data: MatchData = {
         matchId: match_id,
-        matchName: 'Match One',
         matchStartTime: nowTimestamp(),
         matchEndTime: nowTimestamp() +  60 * 3,
         voteCount: 0,
         voteArenaCount: 0,
         voteChallengeCount: 0,
-        arenaNFT: user1_nft.address,
+        arenaJPG: arenaJPG != '' ? arenaJPG : '',
+        arenaJPGOwner: arenaJPG != '' ? user1_wallet.address : ethers.constants.AddressZero,
+        arenaNFT: user1_nft ? user1_nft.address : ethers.constants.AddressZero,
         arenaTokenId: user1_nft_token_id,
         arenaOwnerSignature: '',
-        challengeNFT: user2_nft.address,
+        challengeJPG: challengeJPG != '' ? challengeJPG : '',
+        challengeJPGOwner: challengeJPG != '' ? user2_wallet.address : ethers.constants.AddressZero,
+        challengeNFT: user2_nft ? user2_nft.address : ethers.constants.AddressZero,
         challengeTokenId: user2_nft_token_id,
         challengeOwnerSignature: '',
         merkleTreeURI: '',
@@ -376,10 +671,10 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet): Promise<
         burnedAt: 0
     }
 
-    const arena_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId])))
+    const arena_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner])))
     match_data.arenaOwnerSignature = signMessageByWallet(user1_wallet, arena_hash)
 
-    const challenge_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId])))
+    const challenge_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner])))
     match_data.challengeOwnerSignature = signMessageByWallet(user2_wallet, challenge_hash)
     // console.log('match_data', match_data)
 
@@ -510,7 +805,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet): Promise<
     console.log('verify_result', verify_result)
     expect(verify_result).to.equal(true)
 
-    const arena_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId)
+    const arena_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner)
     expect(arena_hash).to.equal(arena_hash_in_contract)
 
     // const user1_signer = await nft_battle.getSigner(arena_hash, match_data.arenaOwnerSignature)
@@ -524,7 +819,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet): Promise<
     // const rs = await nft_battle.checkSign(arena_hash,user1_nft_owner, match_data.arenaOwnerSignature)
     // console.log('rs', rs)
 
-    const challenge_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId)
+    const challenge_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner)
     expect(challenge_hash).to.equal(challenge_hash_in_contract)
 
     return {

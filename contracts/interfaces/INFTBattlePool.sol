@@ -19,6 +19,8 @@ interface INFTBattlePool {
 
     function stake(address _nft_address, MatchStructs.ApprovalData calldata _approve_data) external;
 
+    function stakeFrom(address _owner_address, address _nft_address, uint256 _tokenId) external;
+
     function redeem(address _nft_address, uint256 _tokenId) external;
 
     function redeemToOwner(address _owner_address, address _nft_address, uint256 _tokenId) external;

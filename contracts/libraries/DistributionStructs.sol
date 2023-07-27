@@ -32,4 +32,26 @@ library  DistributionStructs {
         uint256 claimed_amount;
         uint256 last_claimed_at;
     }
+
+    struct CreationNFTParams {
+        address creator;
+        string name;
+        string symbol;
+        string baseURI;
+        DistributionRoleParams distribution_role_params;
+        address distribution_policy_address;
+    }
+
+    struct DetermineIncludeJPGVars {
+        address winner_address;
+        address loser_address;
+        bool winner_is_jpg;
+        bool loser_is_jpg;
+        address winner_nft_address;
+        uint256 winner_nft_token_id;
+        address loser_nft_address;
+        uint256 loser_nft_token_id;
+        string winner_jpg;
+        string loser_jpg;
+    }
 }

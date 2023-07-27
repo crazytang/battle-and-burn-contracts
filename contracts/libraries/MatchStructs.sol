@@ -6,7 +6,6 @@ library MatchStructs {
     // 比赛数据
     struct MatchData {
         bytes32 matchId; // 比赛ID
-        string matchName; // 比赛名称
         uint256 matchStartTime; // 比赛开始时间
         uint256 matchEndTime; // 比赛结束时间
 
@@ -14,10 +13,14 @@ library MatchStructs {
         uint256 voteArenaCount; // 投票摆擂台数量
         uint256 voteChallengeCount; // 投票挑战者数量
 
+        string arenaJPG; // 摆擂台JPG地址
+        address arenaJPGOwner; // 摆擂台JPG持有人
         address arenaNFT; // 摆擂台的NFT地址
         uint256 arenaTokenId; // 摆擂台的NFT的tokenId
         bytes arenaOwnerSignature; // 摆擂台NFT持有人签名
 
+        string challengeJPG; // 挑战者JPG地址
+        address challengeJPGOwner; // 挑战者JPG持有人
         address challengeNFT; // 挑战者NFT地址
         uint256 challengeTokenId; // 挑战者NFT的tokenId
         bytes challengeOwnerSignature; // 挑战者NFT持有人签名
@@ -73,4 +76,5 @@ library MatchStructs {
         ERC721,
         ERC1155
     }
+
 }

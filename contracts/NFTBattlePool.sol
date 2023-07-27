@@ -1,5 +1,5 @@
-// ##deployed index: 16
-// ##deployed at: 2023/07/26 14:28:40
+// ##deployed index: 17
+// ##deployed at: 2023/07/27 20:07:20
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -69,6 +69,20 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         _integretyCheck();
 
         emit Staked(_approve_data.owner, _nft_address, _approve_data.tokenId);
+    }
+
+    function stakeFrom(address _owner_address, address _nft_address, uint256 _tokenId) external override whenNotPaused {
+        require(_nft_address != address(0), "NFTBattle: NFT address is zero");
+
+        IERC721 _nft = IERC721(_nft_address);
+        require(_nft.ownerOf(_tokenId) == msg.sender, "NFTBattle: msg.sender is not the owner of the token");
+        require(_nft.getApproved(_tokenId) == address(this), "NFTBattle: NFT contract does not approve this contract");
+        _nft.transferFrom(msg.sender, address(this), _tokenId);
+        _setUserStakedData(_owner_address, _nft_address, _tokenId);
+
+        _integretyCheck();
+
+        emit Staked(_owner_address, _nft_address, _tokenId);
     }
 
     /// @notice 赎回NFT
