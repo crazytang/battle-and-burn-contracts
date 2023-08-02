@@ -31,7 +31,8 @@ contract TestMerkleTree {
             _user_vote.voter,
             _user_vote.votedNFT,
             _user_vote.votedTokenId,
-            _user_vote.voterNonce,
+            _user_vote.votedJPG,
+            _user_vote.votedJPGOwner,
             _user_vote.votedAt
         ))));
     }

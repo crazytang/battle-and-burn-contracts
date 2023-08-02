@@ -1,5 +1,5 @@
-// ##deployed index: 50
-// ##deployed at: 2023/07/27 20:57:55
+// ##deployed index: 60
+// ##deployed at: 2023/08/02 18:13:48
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -9,11 +9,12 @@ import "./dependencies/PausableUpgradeable.sol";
 import "./dependencies/ReentrancyGuardUpgradeable.sol";
 import "./dependencies/Address.sol";
 import "./dependencies/ECDSAUpgradeable.sol";
-import "./libraries/MatchStructs.sol";
+import {BattlePoolUserStakedData as UserStakedData} from "./libraries/UserStakeStructs.sol";
 import "./interfaces/INFTBattlePool.sol";
 import "./interfaces/INFTBattle.sol";
 import "./interfaces/ICreationNFT.sol";
 import "./libraries/DistributionStructs.sol";
+import "./libraries/MatchStructs.sol";
 import "./CreateNFTContract.sol";
 
 contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
@@ -31,9 +32,11 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     uint96 minimum_vote_amount;
 
-    INFTBattlePool public nft_battle_pool;
+    INFTBattlePool public override nft_battle_pool;
 
-    CreateNFTContract public create_nft_contract;
+    CreateNFTContract public override create_nft_contract;
+
+    address public override verifier_address;
 
     /// @notice This method is called by the proxy contract to initialize the contract.
     function initialize(address _create_nft_contract) public initializer {
@@ -41,9 +44,18 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         __Pausable_init();
         __ReentrancyGuard_init();
 
+        require(Address.isContract(_create_nft_contract), "NFTBattle: CreateNFTContract is not a contract");
         create_nft_contract = CreateNFTContract(_create_nft_contract);
 
         minimum_vote_amount = 2;
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
     }
 
     /// @notice 设置NFTBattlePool地址
@@ -53,6 +65,12 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         nft_battle_pool = INFTBattlePool(_nft_battle_pool);
 
         emit SetNFTBattlePool(_nft_battle_pool);
+    }
+
+    function setVerifierAddress(address _verifier_address) external override whenNotPaused onlyOwner {
+        verifier_address = _verifier_address;
+
+        emit SetVerifierAddress(_verifier_address);
     }
 
     function setCreateNFTContract(address _create_nft_contract) external override whenNotPaused onlyOwner {
@@ -134,13 +152,14 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
     /// @notice 获取用户投票的hash
     /// @param _user_vote 用户投票数据
     /// @return hash值
-    function getUserVoteHash(MatchStructs.UserVote calldata _user_vote) external override pure returns (bytes32) {
+    function getUserVoteHash(MatchStructs.UserVote calldata _user_vote) public override pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(
             _user_vote.matchId,
             _user_vote.voter,
             _user_vote.votedNFT,
             _user_vote.votedTokenId,
-            _user_vote.voterNonce,
+            _user_vote.votedJPG,
+            _user_vote.votedJPGOwner,
             _user_vote.votedAt
         ))));
     }
@@ -171,12 +190,18 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         return _getNFTId(_nft_address, _nft_tokenId);
     }
 
+    function checkUserVote(MatchStructs.UserVote calldata _user_vote, bytes calldata _signature) external view override returns (bool) {
+        bytes32 _hash = getUserVoteHash(_user_vote);
+        return _hash.recover(_signature) == _user_vote.voter;
+    }
+
     function _getNFTId(address _nft_address, uint256 _nft_tokenId) private pure returns (bytes32) {
         return keccak256(abi.encode(_nft_address, _nft_tokenId));
     }
 
     function _checkSign(bytes32 _hash, address _signer, bytes calldata _signature) private pure returns (bool) {
-        return _hash.recover(_signature) == _signer;
+        (address _recovered_signer, ) = _hash.tryRecover(_signature);
+        return _recovered_signer == _signer;
     }
 
     function _hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
@@ -212,6 +237,8 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
         _checkMatchData(_match_data);
 
+        _checkExtraSignature(_match_data.merkleTreeRoot, _match_data.extraSignature);
+
         address _loser_nft_address;
         uint256 _loser_nft_token_id;
 
@@ -233,7 +260,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
         address _winner_address = nft_battle_pool.getNFTOwner(_winner_nft_address, _winner_nft_token_id);
 
-        MatchStructs.NFTData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _winner_nft_address, _winner_nft_token_id);
+        UserStakedData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _winner_nft_address, _winner_nft_token_id);
         require(_winner_nft_data.amount > 0, "NFTBattle: winner nft is not staked");
         require(_winner_nft_data.isFrozen == false, "NFTBattle: winner nft is frozen");
 
@@ -277,6 +304,8 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 //        require(_match_data.voteArenaCount != _match_data.voteChallengeCount, "NFTBattle: voteArenaCount is equal to voteChallengeCount");
 //        require(_match_data.merkleTreeRoot.length > 0, "NFTBattle: merkleTreeRoot can not be empty");
         _checkMatchData(_match_data);
+
+        _checkExtraSignature(_match_data.merkleTreeRoot, _match_data.extraSignature);
 
         DistributionStructs.DetermineIncludeJPGVars memory vars;
         bool _arena_win = _match_data.voteArenaCount > _match_data.voteChallengeCount;
@@ -360,6 +389,12 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         require(_challenge_sign, "NFTBattle: challengeOwnerSignature is invalid");
 
         return true;
+    }
+
+    function _checkExtraSignature(bytes32 _merkle_root, bytes calldata _extra_signature) private view returns (bool) {
+//        (address _signer,) = _merkle_root.tryRecover(_extra_signature);
+//        return _signer == verifier_address;
+        return _merkle_root.recover(_extra_signature) == verifier_address;
     }
 
     function _updateMatchData(MatchStructs.MatchData calldata _match_data, address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {

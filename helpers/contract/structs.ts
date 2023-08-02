@@ -106,6 +106,7 @@ export interface MatchData {
     challengeOwnerSignature: string
     merkleTreeURI: string
     merkleTreeRoot: string
+    extraSignature: string
     burnedAt: number
 }
 
@@ -127,6 +128,7 @@ export const fetchToMatchData = (data: any): MatchData => {
         challengeNFT: data['challengeNFT'],
         challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
         challengeOwnerSignature: data['challengeOwnerSignature'],
+        extraSignature: data['extraSignature'],
         merkleTreeURI: data['merkleTreeURI'],
         merkleTreeRoot: data['merkleTreeRoot'],
         burnedAt: bnToNoPrecisionNumber(data['burnedAt'])

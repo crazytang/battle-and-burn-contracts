@@ -1,14 +1,14 @@
-// deployed_index: 50
-// deployed_at: 2023/07/27 20:57:55
+// deployed_index: 60
+// deployed_at: 2023/08/02 18:13:48
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattle',
-    address: '0x55A42bfED3Ac4f496E3386c9E1351D6048C201c0',
-    proxy_address: '0x55A42bfED3Ac4f496E3386c9E1351D6048C201c0',
-    target_address: '0xB12355c6696E247AaDEdC092dB4E97bbe6a43e03',
+    address: '0x4cd680da18e01a40cB08bDA4CA25be550f8B2223',
+    proxy_address: '0x4cd680da18e01a40cB08bDA4CA25be550f8B2223',
+    target_address: '0x897ef489Fb4bb894D345D93FD9C33A22d7070cFE',
     libraries: [],
     abi:  [
     {
@@ -198,6 +198,19 @@ const NFTBattle_data: ProxyContractData = {
         {
           "indexed": false,
           "internalType": "address",
+          "name": "new_verifier_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetVerifierAddress",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
           "name": "account",
           "type": "address"
         }
@@ -300,6 +313,11 @@ const NFTBattle_data: ProxyContractData = {
               "type": "bytes32"
             },
             {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
+            },
+            {
               "internalType": "uint256",
               "name": "burnedAt",
               "type": "uint256"
@@ -353,6 +371,67 @@ const NFTBattle_data: ProxyContractData = {
         }
       ],
       "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "matchId",
+              "type": "bytes"
+            },
+            {
+              "internalType": "address",
+              "name": "voter",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "votedNFT",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "votedTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "votedJPG",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "votedJPGOwner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "votedAt",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct MatchStructs.UserVote",
+          "name": "_user_vote",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "checkUserVote",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -461,6 +540,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "merkleTreeRoot",
               "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -578,6 +662,11 @@ const NFTBattle_data: ProxyContractData = {
               "type": "bytes32"
             },
             {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
+            },
+            {
               "internalType": "uint256",
               "name": "burnedAt",
               "type": "uint256"
@@ -686,6 +775,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "merkleTreeRoot",
               "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -855,6 +949,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "merkleTreeRoot",
               "type": "bytes32"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
             },
             {
               "internalType": "uint256",
@@ -1029,6 +1128,11 @@ const NFTBattle_data: ProxyContractData = {
               "type": "bytes32"
             },
             {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
+            },
+            {
               "internalType": "uint256",
               "name": "burnedAt",
               "type": "uint256"
@@ -1158,9 +1262,14 @@ const NFTBattle_data: ProxyContractData = {
               "type": "uint256"
             },
             {
-              "internalType": "uint256",
-              "name": "voterNonce",
-              "type": "uint256"
+              "internalType": "string",
+              "name": "votedJPG",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "votedJPGOwner",
+              "type": "address"
             },
             {
               "internalType": "uint256",
@@ -1274,6 +1383,13 @@ const NFTBattle_data: ProxyContractData = {
     },
     {
       "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "paused",
       "outputs": [
         {
@@ -1322,6 +1438,19 @@ const NFTBattle_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
+          "name": "_verifier_address",
+          "type": "address"
+        }
+      ],
+      "name": "setVerifierAddress",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "newOwner",
           "type": "address"
         }
@@ -1329,6 +1458,26 @@ const NFTBattle_data: ProxyContractData = {
       "name": "transferOwnership",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "verifier_address",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ],

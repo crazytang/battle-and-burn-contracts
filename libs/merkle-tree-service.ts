@@ -96,7 +96,8 @@ export class MerkleTreeService {
             user_vote.voter,
             user_vote.votedNFT,
             user_vote.votedTokenId,
-            user_vote.voterNonce,
+            user_vote.votedJPG,
+            user_vote.votedJPGOwner,
             user_vote.votedAt
         ]
 
@@ -105,7 +106,8 @@ export class MerkleTreeService {
             'address',
             'address',
             'uint256',
-            'uint256',
+            'string',
+            'address',
             'uint256'
         ]
 
@@ -122,7 +124,8 @@ export class MerkleTreeService {
                     result.voter,
                     result.votedNFT,
                     result.votedTokenId,
-                    result.voterNonce,
+                    result.votedJPG,
+                    result.votedJPGOwner,
                     result.votedAt
                 ]
             )
@@ -132,7 +135,8 @@ export class MerkleTreeService {
             'address',
             'address',
             'uint256',
-            'uint256',
+            'string',
+            'address',
             'uint256'
         ]
 

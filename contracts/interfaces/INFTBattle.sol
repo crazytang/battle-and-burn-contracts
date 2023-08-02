@@ -4,17 +4,22 @@ pragma solidity ^0.8.0;
 import "../libraries/MatchStructs.sol";
 import "./INFTBattlePool.sol";
 import "../libraries/DistributionStructs.sol";
+import "../CreateNFTContract.sol";
 
 interface INFTBattle {
     event SetNFTBattlePool(address new_nft_battle_pool);
+    event SetVerifierAddress(address new_verifier_address);
     event SetCreateNFTContract(address create_nft_contract);
     event Determined(bytes32 match_id, address winner_nft, uint256 winner_tokenId, address loser_nft, uint256 loser_tokenId, address burned_to_address);
 
     event DeterminedIncludeJPG(bytes32 match_id, address winner_nft, uint256 winner_tokenId, string winner_jpg, address winner_address, address loser_nft, uint256 loser_tokenId, string loser_jgp, address loser_address, address burned_to_address);
 
     function nft_battle_pool() external view returns (INFTBattlePool);
+    function create_nft_contract() external view returns (CreateNFTContract);
+    function verifier_address() external view returns (address);
 
     function setNFTBattlePool(address _nft_battle_pool) external;
+    function setVerifierAddress(address _verifier_address) external;
     function setCreateNFTContract(address _create_nft_contract) external;
     function determine(MatchStructs.MatchData calldata _match_data, bool _redeem_nft) external;
     function determineBySys(MatchStructs.MatchData calldata _match_data) external;
@@ -30,4 +35,5 @@ interface INFTBattle {
     function getNFTWonMatches(address _nft_address, uint256 _nft_tokenId) external view returns (bytes32[] memory);
     function getNFTKOScore(address _nft_address, uint256 _nft_tokenId) external view returns (uint256);
     function getNFTId(address _nft_address, uint256 _nft_tokenId) external pure returns (bytes32);
+    function checkUserVote(MatchStructs.UserVote calldata _user_vote, bytes calldata _signature) external view returns (bool);
 }

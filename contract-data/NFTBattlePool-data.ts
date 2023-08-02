@@ -1,14 +1,14 @@
-// deployed_index: 17
-// deployed_at: 2023/07/27 20:07:20
+// deployed_index: 18
+// deployed_at: 2023/07/29 15:48:24
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattlePool_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattlePool',
-    address: '0x1aC40Ee240D3B098F93351dDBA903999EB8961Af',
-    proxy_address: '0x1aC40Ee240D3B098F93351dDBA903999EB8961Af',
-    target_address: '0x4eBc0f42b6875475ea41DE7433395B322e4960A1',
+    address: '0x4e3f0FF4C2CA68F55Ab93C4044Ac3243c624cCcE',
+    proxy_address: '0x4e3f0FF4C2CA68F55Ab93C4044Ac3243c624cCcE',
+    target_address: '0xBBeD7Ff95641C1F1FeF82AAD33c96319fb84E5d6',
     libraries: [],
     abi:  [
     {
@@ -143,6 +143,19 @@ const NFTBattlePool_data: ProxyContractData = {
         {
           "indexed": false,
           "internalType": "address",
+          "name": "new_aggressive_bid_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetAggressiveBid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
           "name": "new_nft_battle_address",
           "type": "address"
         }
@@ -224,6 +237,19 @@ const NFTBattlePool_data: ProxyContractData = {
       ],
       "name": "Unpaused",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "aggressive_bid_address",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -327,6 +353,11 @@ const NFTBattlePool_data: ProxyContractData = {
           "components": [
             {
               "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
               "name": "nftAddress",
               "type": "address"
             },
@@ -356,7 +387,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "address"
             }
           ],
-          "internalType": "struct MatchStructs.NFTData[]",
+          "internalType": "struct BattlePoolUserStakedData[]",
           "name": "",
           "type": "tuple[]"
         }
@@ -388,6 +419,11 @@ const NFTBattlePool_data: ProxyContractData = {
           "components": [
             {
               "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
               "name": "nftAddress",
               "type": "address"
             },
@@ -417,7 +453,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "address"
             }
           ],
-          "internalType": "struct MatchStructs.NFTData",
+          "internalType": "struct BattlePoolUserStakedData",
           "name": "",
           "type": "tuple"
         }
@@ -466,6 +502,13 @@ const NFTBattlePool_data: ProxyContractData = {
     },
     {
       "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "paused",
       "outputs": [
         {
@@ -499,6 +542,24 @@ const NFTBattlePool_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "redeemToAggressiveBidPool",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "_owner_address",
           "type": "address"
         },
@@ -521,6 +582,19 @@ const NFTBattlePool_data: ProxyContractData = {
     {
       "inputs": [],
       "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_aggressive_bid_address",
+          "type": "address"
+        }
+      ],
+      "name": "setAggressiveBid",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -588,7 +662,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "bytes32"
             }
           ],
-          "internalType": "struct MatchStructs.ApprovalData",
+          "internalType": "struct ApprovalData",
           "name": "_approve_data",
           "type": "tuple"
         }
@@ -655,6 +729,13 @@ const NFTBattlePool_data: ProxyContractData = {
       "name": "unfreezeNFT",
       "outputs": [],
       "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ],

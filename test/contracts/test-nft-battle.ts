@@ -36,14 +36,13 @@ import fs from "fs";
 import {IpfsService} from "../../libs/ipfs-service";
 import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
-import {MatchStructs} from "../../typechain-types/NFTBattlePool";
-import ApprovalDataStruct = MatchStructs.ApprovalDataStruct;
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
 import {DistributionStructs, MatchStructs as MatchStructs2} from "../../typechain-types/NFTBattle";
 import UserVoteStruct = MatchStructs2.UserVoteStruct;
 import {fetchToMatchData, fetchToNFTData, MatchData, NFTData} from "../../helpers/contract/structs";
 import {randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
 import CreationNFTParamsStruct = DistributionStructs.CreationNFTParamsStruct;
+import {ApprovalDataStruct} from "../../typechain-types/NFTBattlePool";
 
 
 let tx: ContractTransaction
@@ -84,7 +83,7 @@ describe("NFTBattle.sol testing", function () {
         expect(nft_battle_pool_address).to.equal(NFTBattlePool_data.address)
     })
 
-    it.skip('test determine()', async () => {
+    it('test determine()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const rs = await makeMatchData(user1_wallet, user2_wallet)
@@ -149,7 +148,7 @@ describe("NFTBattle.sol testing", function () {
 
         const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
-        expect(new_winner_ko_score).to.equal(old_loser_ko_score + 1)
+        expect(new_winner_ko_score).to.equal(old_winner_ko_score + old_loser_ko_score + 1)
 
         if (redeem_nft) {
             const new_winner_nft_owner = await creation_nft.ownerOf(match_data.arenaTokenId)
@@ -162,7 +161,7 @@ describe("NFTBattle.sol testing", function () {
         }
     })
 
-    it.skip('test determineIncludeJPG()', async () => {
+    it('test determineIncludeJPG()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const user1_jpg_ipfs = 'ipfs://QmbSHDFknsZGNk8N9LeRDpuRADAm5bvcxG6Sfrsa1tc9qi'
@@ -443,7 +442,8 @@ describe("NFTBattle.sol testing", function () {
 
 
     })
-    it.skip('test determineBySys()', async () => {
+
+    it('test determineBySys()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const rs = await makeMatchData(user1_wallet, user2_wallet)
@@ -666,6 +666,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         challengeNFT: user2_nft ? user2_nft.address : ethers.constants.AddressZero,
         challengeTokenId: user2_nft_token_id,
         challengeOwnerSignature: '',
+        extraSignature: ethers.constants.HashZero,
         merkleTreeURI: '',
         merkleTreeRoot: ethers.constants.HashZero,
         burnedAt: 0
@@ -693,10 +694,12 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         voter: voter,
         votedNFT: match_data.arenaNFT,
         votedTokenId: numberToBn(match_data.arenaTokenId, 0),
-        voterNonce: await nft_battle.getUserNonce(voter),
+        votedJPG: match_data.arenaJPG,
+        votedJPGOwner: match_data.arenaJPGOwner,
         votedAt: numberToBn(nowTimestamp(), 0)
     }
 
+    console.log('user_vote', user_vote)
     match_data.voteCount++
     match_data.voteArenaCount++
 
@@ -708,6 +711,10 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
 
     const signed_hash_user_vote1 = signMessageByWallet(user1_wallet, hash_user_vote1)
     expect(recoverAddressFromSignedMessage(hash_user_vote1, signed_hash_user_vote1)).to.equal(user1_wallet.address)
+
+    let rs = await nft_battle.checkUserVote(user_vote, signed_hash_user_vote1)
+    console.log('rs', rs)
+    expect(rs).to.equal(true)
 
     let leaves: string | any[] = []
     leaves = [[signed_hash_user_vote1]]
@@ -722,6 +729,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
 
     match_data.merkleTreeURI = ipfs_file
     match_data.merkleTreeRoot = merkle_tree_service.getRoot()
+    match_data.extraSignature = signMessageByWallet(admin_wallet, match_data.merkleTreeRoot)
 
     // 第二个人投票
     voter = user2_wallet.address
@@ -730,7 +738,8 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         voter: voter,
         votedNFT: match_data.arenaNFT,
         votedTokenId: numberToBn(match_data.arenaTokenId),
-        voterNonce: await nft_battle.getUserNonce(voter),
+        votedJPG: match_data.arenaJPG,
+        votedJPGOwner: match_data.arenaJPGOwner,
         votedAt: numberToBn(nowTimestamp(), 0)
     }
 
@@ -740,6 +749,10 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
     const hash_user_vote2 = MerkleTreeService.hashUserVote(user_vote2)
     const signed_hash_user_vote2 = signMessageByWallet(user2_wallet, hash_user_vote2)
     expect(recoverAddressFromSignedMessage(hash_user_vote2, signed_hash_user_vote2)).to.equal(user2_wallet.address)
+
+    rs = await nft_battle.checkUserVote(user_vote2, signed_hash_user_vote2)
+    console.log('rs', rs)
+    expect(rs).to.equal(true)
 
     leaves = MerkleTreeService.leavesLoadFromJson(ipfs_file_content)
     leaves.push([signed_hash_user_vote2])
@@ -754,6 +767,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
 
     match_data.merkleTreeURI = ipfs_file
     match_data.merkleTreeRoot = merkle_tree_service.getRoot()
+    match_data.extraSignature = signMessageByWallet(admin_wallet, match_data.merkleTreeRoot)
 
     // 第三个人投票
     voter = user3_wallet.address
@@ -763,7 +777,8 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         voter: voter,
         votedNFT: match_data.challengeNFT,
         votedTokenId: numberToBn(match_data.challengeTokenId),
-        voterNonce: await nft_battle.getUserNonce(voter),
+        votedJPG: match_data.challengeJPG,
+        votedJPGOwner: match_data.challengeJPGOwner,
         votedAt: numberToBn(nowTimestamp(), 0)
     }
 
@@ -788,6 +803,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
 
     match_data.merkleTreeURI = ipfs_file
     match_data.merkleTreeRoot = merkle_tree_service.getRoot()
+    match_data.extraSignature = signMessageByWallet(admin_wallet, match_data.merkleTreeRoot)
 
     console.log('match_data', match_data)
 

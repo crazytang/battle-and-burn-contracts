@@ -28,11 +28,12 @@ library MatchStructs {
         string merkleTreeURI; // 投票结果MerkleTree的IPFS地址，用户可以自行验证
         bytes32 merkleTreeRoot; // 投票结果MerkleTree的根节点
 
+        bytes extraSignature;
         uint256 burnedAt; // 比赛结束后，烧毁NFT的时间
     }
 
     // 投票数据
-    struct VoteData {
+/*    struct VoteData {
         bytes matchId; // 比赛ID
         address voter; // 投票人
         UserVote userVote; // 投票结果
@@ -40,7 +41,7 @@ library MatchStructs {
         uint256 votedAt; // 投票时间
         bytes merkleTreeRoot; // 投票结果MerkleTree的根节点
         bytes[] merkleProof; // 投票结果MerkleTree的证明路径
-    }
+    }*/
 
     // 用户投票
     struct UserVote {
@@ -48,28 +49,9 @@ library MatchStructs {
         address voter; // 投票人
         address votedNFT; // 投票NFT地址
         uint256 votedTokenId; // 投票NFT的tokenId
-        uint256 voterNonce; // 投票人nonce
+        string votedJPG; // 投票NFT的JPG地址
+        address votedJPGOwner; // 投票NFT的JPG持有人
         uint256 votedAt; // 投票时间
-    }
-
-    struct ApprovalData {
-        address owner;
-        address spender;
-        uint256 tokenId;
-        uint256 nonce;
-        uint256 deadline;
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
-
-    struct NFTData {
-        address nftAddress;
-        uint256 tokenId;
-        uint256 amount;
-        uint256 stakedAt;
-        bool isFrozen;
-        address beneficiaryAddress;
     }
 
     enum NFTType {
