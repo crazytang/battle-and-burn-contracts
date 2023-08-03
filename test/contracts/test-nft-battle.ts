@@ -42,7 +42,8 @@ import UserVoteStruct = MatchStructs2.UserVoteStruct;
 import {fetchToMatchData, fetchToNFTData, MatchData, NFTData} from "../../helpers/contract/structs";
 import {randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
 import CreationNFTParamsStruct = DistributionStructs.CreationNFTParamsStruct;
-import {ApprovalDataStruct} from "../../typechain-types/NFTBattlePool";
+import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
+import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
 
 
 let tx: ContractTransaction
@@ -588,7 +589,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         let s = user1_signature.s
 
         const user1_approval_data: ApprovalDataStruct = {
-            owner: user1_nft_owner,
+            userAddress: user1_nft_owner,
             spender: spender,
             tokenId: numberToBn(user1_nft_token_id, 0),
             nonce: nonce,
@@ -628,7 +629,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         let s = user2_signature.s
 
         const user2_approval_data: ApprovalDataStruct = {
-            owner: user2_nft_owner,
+            userAddress: user2_nft_owner,
             spender: spender,
             tokenId: numberToBn(user2_nft_token_id, 0),
             nonce: nonce,

@@ -1,14 +1,14 @@
-// deployed_index: 60
-// deployed_at: 2023/08/02 18:13:48
+// deployed_index: 62
+// deployed_at: 2023/08/03 18:11:43
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattle',
-    address: '0x4cd680da18e01a40cB08bDA4CA25be550f8B2223',
-    proxy_address: '0x4cd680da18e01a40cB08bDA4CA25be550f8B2223',
-    target_address: '0x897ef489Fb4bb894D345D93FD9C33A22d7070cFE',
+    address: '0xd19D8ad225f93299Cb6F872037646E3083b61f60',
+    proxy_address: '0xd19D8ad225f93299Cb6F872037646E3083b61f60',
+    target_address: '0x40DC3Fa14DA48349495eFbeaCc15a2c06768d800',
     libraries: [],
     abi:  [
     {

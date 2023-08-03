@@ -1,5 +1,5 @@
-// ##deployed index: 60
-// ##deployed at: 2023/08/02 18:13:48
+// ##deployed index: 62
+// ##deployed at: 2023/08/03 18:11:43
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -9,7 +9,7 @@ import "./dependencies/PausableUpgradeable.sol";
 import "./dependencies/ReentrancyGuardUpgradeable.sol";
 import "./dependencies/Address.sol";
 import "./dependencies/ECDSAUpgradeable.sol";
-import {BattlePoolUserStakedData as UserStakedData} from "./libraries/UserStakeStructs.sol";
+import "./libraries/UserStakeStructs.sol";
 import "./interfaces/INFTBattlePool.sol";
 import "./interfaces/INFTBattle.sol";
 import "./interfaces/ICreationNFT.sol";
@@ -212,18 +212,24 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     function _checkArenaAndChallengeSignatures(MatchStructs.MatchData calldata _match_data) private view returns (bool, bool) {
         bool _arena_sign = false;
-        bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
-        address _arena_owner = _match_data.arenaJPGOwner != address(0) ? _match_data.arenaJPGOwner : nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
-        if (_checkSign(_arena_hash, _arena_owner, _match_data.arenaOwnerSignature)) {
-            _arena_sign = true;
+        bool _challenge_sign = false;
+
+        if (_match_data.arenaOwnerSignature.length > 0 ){
+            bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
+            address _arena_owner = _match_data.arenaJPGOwner != address(0) ? _match_data.arenaJPGOwner : nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
+            if (_checkSign(_arena_hash, _arena_owner, _match_data.arenaOwnerSignature)) {
+                _arena_sign = true;
+            }
         }
 
-        bool _challenge_sign = false;
-        bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
-        address _challenge_owner = _match_data.challengeJPGOwner != address(0) ? _match_data.challengeJPGOwner : nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
-        if (_checkSign(_challenge_hash, _challenge_owner, _match_data.challengeOwnerSignature)) {
-            _challenge_sign = true;
+        if (_match_data.challengeOwnerSignature.length > 0) {
+            bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
+            address _challenge_owner = _match_data.challengeJPGOwner != address(0) ? _match_data.challengeJPGOwner : nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
+            if (_checkSign(_challenge_hash, _challenge_owner, _match_data.challengeOwnerSignature)) {
+                _challenge_sign = true;
+            }
         }
+
 
         return (_arena_sign, _challenge_sign);
     }
@@ -260,7 +266,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
         address _winner_address = nft_battle_pool.getNFTOwner(_winner_nft_address, _winner_nft_token_id);
 
-        UserStakedData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _winner_nft_address, _winner_nft_token_id);
+        UserStakeStructs.BattlePoolUserStakedData memory _winner_nft_data = nft_battle_pool.getUserStakedData(_winner_address, _winner_nft_address, _winner_nft_token_id);
         require(_winner_nft_data.amount > 0, "NFTBattle: winner nft is not staked");
         require(_winner_nft_data.isFrozen == false, "NFTBattle: winner nft is frozen");
 

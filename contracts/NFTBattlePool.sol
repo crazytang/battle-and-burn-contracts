@@ -1,5 +1,5 @@
-// ##deployed index: 18
-// ##deployed at: 2023/07/29 15:48:24
+// ##deployed index: 20
+// ##deployed at: 2023/08/03 18:12:00
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -12,12 +12,12 @@ import "./dependencies/IERC165.sol";
 import "./dependencies/Address.sol";
 import "./interfaces/IApproveBySig.sol";
 import "./interfaces/INFTBattlePool.sol";
-import {BattlePoolUserStakedData as UserStakedData, ApprovalData} from "./libraries/UserStakeStructs.sol";
+import "./libraries/UserStakeStructs.sol";
 
 contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
     // 用户质押数据
-    mapping(address => UserStakedData[]) users_staked_data;
+    mapping(address => UserStakeStructs.BattlePoolUserStakedData[]) users_staked_data;
 
     address public override nft_battle_address;
     address public constant override burn_to_address = address(1);
@@ -76,20 +76,20 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
     /// @notice 质押NFT
     /// @param _nft_address NFT地址
     /// @param _approve_data NFT的授权数据
-    function stake(address _nft_address, ApprovalData calldata _approve_data) external override whenNotPaused {
+    function stake(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external override whenNotPaused {
         require(_nft_address != address(0), "NFTBattle: NFT address is zero");
 
         IERC721 _nft = IERC721(_nft_address);
-        require(_nft.ownerOf(_approve_data.tokenId) == _approve_data.owner, "NFTBattle: NFT owner is not the owner of the token");
+        require(_nft.ownerOf(_approve_data.tokenId) == _approve_data.userAddress, "NFTBattle: NFT owner is not the owner of the token");
         require(IERC165(_nft_address).supportsInterface(INTERFACE_ID_APPROVEBYSIG), "NFTBattle: NFT contract does not support IApproveBySig");
 
-        IApproveBySig(_nft_address).approveBySig(_approve_data.owner, _approve_data.spender, _approve_data.tokenId, _approve_data.nonce, _approve_data.deadline, _approve_data.v, _approve_data.r, _approve_data.s);
+        IApproveBySig(_nft_address).approveBySig(_approve_data.userAddress, _approve_data.spender, _approve_data.tokenId, _approve_data.nonce, _approve_data.deadline, _approve_data.v, _approve_data.r, _approve_data.s);
 
         require(_nft.getApproved(_approve_data.tokenId) == address(this), "NFTBattle: NFT contract does not approve this contract");
-        _nft.transferFrom(_approve_data.owner, address(this), _approve_data.tokenId);
-        _setUserStakedData(_approve_data.owner, _nft_address, _approve_data.tokenId);
+        _nft.transferFrom(_approve_data.userAddress, address(this), _approve_data.tokenId);
+        _setUserStakedData(_approve_data.userAddress, _nft_address, _approve_data.tokenId);
 
-        emit Staked(_approve_data.owner, _nft_address, _approve_data.tokenId);
+        emit Staked(_approve_data.userAddress, _nft_address, _approve_data.tokenId);
     }
 
     function stakeFrom(address _owner_address, address _nft_address, uint256 _tokenId) external override whenNotPaused {
@@ -130,7 +130,7 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
     /// @param _nft_address NFT地址
     /// @param _tokenId NFT的tokenId
     function burnNFT(address _loser_address, address _nft_address, uint256 _tokenId) external override whenNotPaused onlyNFTBattle {
-        UserStakedData memory _staked_data = _getUserStakedData(_loser_address, _nft_address, _tokenId);
+        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = _getUserStakedData(_loser_address, _nft_address, _tokenId);
         require(_staked_data.amount > 0, "NFTBattle: NFT is not staked");
         require(_staked_data.isFrozen == false, "NFTBattle: NFT is frozen");
 
@@ -199,14 +199,26 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
     /// @param _nft_address NFT地址
     /// @param _tokenId NFT的tokenId
     /// @return NFT的数据
-    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view override returns (UserStakedData memory) {
+    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view override
+    returns (UserStakeStructs.BattlePoolUserStakedData memory) {
         return _getUserStakedData(_user, _nft_address, _tokenId);
     }
 
     /// @notice 获取用户质押的所有NFT的数据
     /// @param _user 用户地址
     /// @return NFT的数据列表
-    function getUserAllStatkedData(address _user) external view override returns (UserStakedData[] memory) {
+/*    function getUserAllStatkedData(address _user) external view override returns (address[] memory, uint256[] memory) {
+        uint256 _length = users_staked_data[_user].length;
+        address[] memory _nft_address_list = new address[](_length);
+        uint256[] memory _token_id_list = new uint256[](_length);
+        for (uint256 i=0; i<_length; i++) {
+            _nft_address_list[i] = users_staked_data[_user][i].nftAddress;
+            _token_id_list[i] = users_staked_data[_user][i].tokenId;
+        }
+        return (_nft_address_list, _token_id_list);
+    }*/
+
+    function getUserAllStatkedData(address _user) external view override returns (UserStakeStructs.BattlePoolUserStakedData[] memory) {
         return users_staked_data[_user];
     }
 
@@ -236,7 +248,7 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
     }
 
     function _redeem(address _owner_address, address _nft_address, uint256 _tokenId) private {
-        UserStakedData memory _staked_data = _getUserStakedData(_owner_address, _nft_address, _tokenId);
+        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = _getUserStakedData(_owner_address, _nft_address, _tokenId);
         require(_staked_data.amount > 0, "NFTBattle: NFT is not staked");
         require(_staked_data.isFrozen == false, "NFTBattle: NFT is frozen");
 
@@ -256,8 +268,8 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
             }
         }
 
-        UserStakedData memory _staked_data = UserStakedData({
-            owner : _user,
+        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = UserStakeStructs.BattlePoolUserStakedData({
+            userAddress : _user,
             nftAddress: _nft_address,
             tokenId: _tokenId,
             amount: 1,
@@ -296,8 +308,8 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         return true;
     }
 
-    function _getUserStakedData(address _user, address _nft_address, uint256 _tokenId) private view returns (UserStakedData memory) {
-        UserStakedData memory _staked_data;
+    function _getUserStakedData(address _user, address _nft_address, uint256 _tokenId) private view returns (UserStakeStructs.BattlePoolUserStakedData memory) {
+        UserStakeStructs.BattlePoolUserStakedData memory _staked_data;
         for (uint256 i = 0; i < users_staked_data[_user].length; i++) {
             if (users_staked_data[_user][i].nftAddress == _nft_address && users_staked_data[_user][i].tokenId == _tokenId) {
                 _staked_data = users_staked_data[_user][i];

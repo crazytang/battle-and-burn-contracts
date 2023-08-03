@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/MatchStructs.sol";
-import {BattlePoolUserStakedData as UserStakedData, ApprovalData} from "../libraries/UserStakeStructs.sol";
+import "../libraries/UserStakeStructs.sol";
 
 interface INFTBattlePool {
     event SetNFTBattle(address new_nft_battle_address);
@@ -22,7 +22,7 @@ interface INFTBattlePool {
 
     function setAggressiveBid(address _aggressive_bid_address) external;
 
-    function stake(address _nft_address, ApprovalData calldata _approve_data) external;
+    function stake(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external;
 
     function stakeFrom(address _owner_address, address _nft_address, uint256 _tokenId) external;
 
@@ -38,9 +38,9 @@ interface INFTBattlePool {
 
     function unfreezeNFT(address _nft_address, uint256 _tokenId, bool _nft_redeem) external payable;
 
-    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view returns (UserStakedData memory);
+    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view returns (UserStakeStructs.BattlePoolUserStakedData memory);
 
-    function getUserAllStatkedData(address _user) external view returns (UserStakedData[] memory);
-
+//    function getUserAllStatkedData(address _user) external view returns (address[] memory, uint256[] memory);
+    function getUserAllStatkedData(address _user) external view returns (UserStakeStructs.BattlePoolUserStakedData[] memory);
     function getNFTOwner(address _nft_address, uint256 _tokenId) external view returns (address);
 }

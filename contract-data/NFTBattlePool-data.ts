@@ -1,14 +1,14 @@
-// deployed_index: 18
-// deployed_at: 2023/07/29 15:48:24
+// deployed_index: 20
+// deployed_at: 2023/08/03 18:12:00
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattlePool_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattlePool',
-    address: '0x4e3f0FF4C2CA68F55Ab93C4044Ac3243c624cCcE',
-    proxy_address: '0x4e3f0FF4C2CA68F55Ab93C4044Ac3243c624cCcE',
-    target_address: '0xBBeD7Ff95641C1F1FeF82AAD33c96319fb84E5d6',
+    address: '0xa2b3a1f6581ba81090df5eBF1e1b0cfCfF24c3Db',
+    proxy_address: '0xa2b3a1f6581ba81090df5eBF1e1b0cfCfF24c3Db',
+    target_address: '0x9Fdb1A439779A3Eac458F598B754fc6f80DE45C3',
     libraries: [],
     abi:  [
     {
@@ -353,7 +353,7 @@ const NFTBattlePool_data: ProxyContractData = {
           "components": [
             {
               "internalType": "address",
-              "name": "owner",
+              "name": "userAddress",
               "type": "address"
             },
             {
@@ -387,7 +387,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "address"
             }
           ],
-          "internalType": "struct BattlePoolUserStakedData[]",
+          "internalType": "struct UserStakeStructs.BattlePoolUserStakedData[]",
           "name": "",
           "type": "tuple[]"
         }
@@ -419,7 +419,7 @@ const NFTBattlePool_data: ProxyContractData = {
           "components": [
             {
               "internalType": "address",
-              "name": "owner",
+              "name": "userAddress",
               "type": "address"
             },
             {
@@ -453,7 +453,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "address"
             }
           ],
-          "internalType": "struct BattlePoolUserStakedData",
+          "internalType": "struct UserStakeStructs.BattlePoolUserStakedData",
           "name": "",
           "type": "tuple"
         }
@@ -623,7 +623,7 @@ const NFTBattlePool_data: ProxyContractData = {
           "components": [
             {
               "internalType": "address",
-              "name": "owner",
+              "name": "userAddress",
               "type": "address"
             },
             {
@@ -662,7 +662,7 @@ const NFTBattlePool_data: ProxyContractData = {
               "type": "bytes32"
             }
           ],
-          "internalType": "struct ApprovalData",
+          "internalType": "struct UserStakeStructs.ApprovalData",
           "name": "_approve_data",
           "type": "tuple"
         }
