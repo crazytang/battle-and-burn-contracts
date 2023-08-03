@@ -1,5 +1,5 @@
-// ##deployed index: 2
-// ##deployed at: 2023/07/17 14:17:12
+// ##deployed index: 6
+// ##deployed at: 2023/08/03 19:18:07
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -22,11 +22,11 @@ contract MagnifierNFT is IMagnifierNFT, ERC1155Supply, Ownable {
         name = _name;
         symbol = _symbol;
         token_base_URI = _baseURI;
-
+        uint256 _tokenId = 0;
         for (uint8 i = 0; i < _range; i++) {
-            uint256 _tokenId = i + 1;
-            _mint(msg.sender, _range, _pre_mint, '');
+            _mint(msg.sender, _tokenId, _pre_mint, '');
             _addTokenIds(_tokenId);
+            _tokenId++;
         }
     }
 

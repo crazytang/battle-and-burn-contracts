@@ -1,12 +1,12 @@
-// deployed_index: 2
-// deployed_at: 2023/07/17 14:17:12
+// deployed_index: 6
+// deployed_at: 2023/08/03 19:18:07
 
 import {ContractData} from "../helpers/interfaces/contract_data_interface";
 const MagnifierNFT_data: ContractData = {
     env: 'test',
     network: 'arbitrum-goerli',
     contract_name: 'MagnifierNFT',
-    address: '0x1Cba224efbf5f077F5a87f35ae4f3b0A1168Eb5A',
+    address: '0x423Bd57A8b55ff974899A8d949EBf7e1E901418c',
     libraries: [],
     abi:  [
     {
