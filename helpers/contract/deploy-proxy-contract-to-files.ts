@@ -18,7 +18,7 @@ import {getContractFileAndArtifactFile, updateContractDeploymentInfo} from "./de
  * @param initialize_args
  * @return Promise<[Contract, Contract]>
  */
-export const deploy_proxy_contract = async function (contract_name: string, admin_wallet: Wallet, initialize_function = "initialize()", initialize_args: string[] = []): Promise<[Contract, Contract]> {
+export const deploy_proxy_contract = async function (contract_name: string, admin_wallet: Wallet, initialize_function = "initialize()", initialize_args: any[] = []): Promise<[Contract, Contract]> {
     let new_contract: Contract
     let model_name: string
 
