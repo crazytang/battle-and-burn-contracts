@@ -20,7 +20,7 @@ async function main() {
     const name = 'Magnifier NFT'
     const symbol = 'MAGNIFIER'
 
-    const baseUri = 'ipfs://bafybeifitgcwguqqvuiycjsxepvtjp3ix43ofrkm65kz2shea2fzqcee4i/'
+    const baseUri = 'ipfs://QmYEPFhB3FkyDd14GzDFLHqKjpnniH3tRkQBnd2m5sgGVU/'
     const contract = await deploy_contract_to_file(admin_wallet, contract_name, [name, symbol, baseUri, 8, 10000]);
 
     console.log(contract_name + ' deployed address', contract.address);
