@@ -6,7 +6,7 @@ const MagnifierNFT_data: ContractData = {
     env: 'test',
     network: 'arbitrum-goerli',
     contract_name: 'MagnifierNFT',
-    address: '0x423Bd57A8b55ff974899A8d949EBf7e1E901418c',
+    address: '0x6d54cf790de7a3e7af24345337517856389aff41',
     libraries: [],
     abi:  [
     {
@@ -562,7 +562,7 @@ const MagnifierNFT_data: ContractData = {
       "type": "function"
     }
   ],
-  
+
 };
 
 export default MagnifierNFT_data;
