@@ -3,9 +3,6 @@ import UserRewardDataStructOutput = DistributionStructs.UserRewardDataStructOutp
 import {BigNumber} from "ethers";
 import {bnToDate, bnToNoPrecisionNumber, bnToNumber} from "./contract-utils";
 import DistributionRoleStructOutput = DistributionStructs.DistributionRoleStructOutput;
-import {nowTimestamp} from "../utils";
-import {ethers} from "hardhat";
-import {string} from "hardhat/internal/core/params/argumentTypes";
 
 export interface DistributionData {
     creator: string

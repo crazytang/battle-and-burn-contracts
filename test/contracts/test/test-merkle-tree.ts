@@ -10,16 +10,13 @@ import {get_admin_wallet} from "../../../helpers/wallets/admin_wallet_getter";
 import {TestMerkleTree, TestMerkleTree__factory} from "../../../typechain-types";
 import TestMerkleTree_data from "../../../contract-data/TestMerkleTree-data";
 import {MatchStructs} from "../../../typechain-types/test/TestMerkleTree";
-import {randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
+import {randomAddress, randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
 import {get_user_wallet_5AD8} from "../../../helpers/wallets/user_wallet_getter";
 import SggcNFT_data from "../../../contract-data/SggcNFT-data";
 import {MerkleTreeService} from "../../../libs/merkle-tree-service";
-import {expect} from "chai";
 import UserVoteStruct = MatchStructs.UserVoteStruct;
-import {hexToBytes} from "ethereum-cryptography/utils";
-import {keccak256} from "@ethersproject/keccak256";
-import {defaultAbiCoder} from "@ethersproject/abi";
 import {nowTimestamp} from "../../../helpers/utils";
+import {expect} from "chai";
 
 let tx: ContractTransaction
 let receipt: ContractReceipt
@@ -122,7 +119,8 @@ export const get_random_user_vote_data = (): UserVoteStruct => {
         voter: voter,
         votedNFT: votedNFT,
         votedTokenId: votedTokenId,
-        voterNonce: voterNonce,
+        votedJPG: '',
+        votedJPGOwner: ethers.constants.AddressZero,
         votedAt: votedAt
     }
 }

@@ -23,10 +23,6 @@ import {contract_l2_provider_getter} from "../../helpers/providers/contract_prov
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import Treasury_data from "../../contract-data/Treasury-data";
-import {DistributionStructs} from "../../typechain-types/DistributionPolicyV1";
-import DistributionRoleStruct = DistributionStructs.DistributionRoleStruct;
-import {PromiseOrValue} from "../../typechain-types/common";
-import {boolean} from "hardhat/internal/core/params/argumentTypes";
 
 
 let tx: ContractTransaction

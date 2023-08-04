@@ -1,5 +1,5 @@
-import {BigNumberish, BytesLike, ContractReceipt, ContractTransaction, Wallet} from "ethers";
-import {ethers} from "hardhat"
+import {BigNumberish, BytesLike, Contract, ContractReceipt, ContractTransaction, Wallet} from "ethers";
+import {ethers} from "ethers"
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
 import {
@@ -542,18 +542,19 @@ const saveAndUploadIPFS = async (ipfs_file_content: string): Promise<string> => 
     return ipfs_file
 }
 
-const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: string, baseURI:string, distributionParams: DistributionRoleParamsStruct): Promise<CreationNFT> => {
+const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: string, baseURI:string, distributionParams: DistributionRoleParamsStruct): Promise<Contract> => {
     const contract_name = 'CreationNFT'
-    let contract_factory = await ethers.getContractFactory(contract_name)
-    contract_factory = contract_factory.connect(admin_wallet)
+    let contract_data = await import('../../artifacts/contracts/CreationNFT.sol/CreationNFT.json')
+    let contract_factory = new ethers.ContractFactory(contract_data.abi, contract_data.bytecode, admin_wallet)
+    // contract_factory = contract_factory.connect(admin_wallet)
     const new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
     return await new_contract.deployed()
 }
 
 const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG='', challengeJPG=''): Promise<{
     match_data: MatchData
-    user1_nft: CreationNFT|null
-    user2_nft: CreationNFT|null
+    user1_nft: CreationNFT|Contract|null
+    user2_nft: CreationNFT|Contract|null
 }> => {
     const match_id:string = randomHash()
     console.log('match_id', match_id)
