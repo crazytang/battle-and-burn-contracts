@@ -544,7 +544,7 @@ const saveAndUploadIPFS = async (ipfs_file_content: string): Promise<string> => 
 
 const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: string, baseURI:string, distributionParams: DistributionRoleParamsStruct): Promise<Contract> => {
     const contract_name = 'CreationNFT'
-    let contract_data = await import('../../artifacts/contracts/CreationNFT.sol/CreationNFT.json')
+    let contract_data = await import('../../data/compiled-data/CreationNFT.json')
     let contract_factory = new ethers.ContractFactory(contract_data.abi, contract_data.bytecode, admin_wallet)
     // contract_factory = contract_factory.connect(admin_wallet)
     const new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
