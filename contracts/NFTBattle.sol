@@ -1,5 +1,5 @@
-// ##deployed index: 62
-// ##deployed at: 2023/08/03 18:11:43
+// ##deployed index: 64
+// ##deployed at: 2023/08/05 15:15:37
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -160,7 +160,8 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
             _user_vote.votedTokenId,
             _user_vote.votedJPG,
             _user_vote.votedJPGOwner,
-            _user_vote.votedAt
+            _user_vote.votedAt,
+            _user_vote.extraSignature
         ))));
     }
 
@@ -190,7 +191,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         return _getNFTId(_nft_address, _nft_tokenId);
     }
 
-    function checkUserVote(MatchStructs.UserVote calldata _user_vote, bytes calldata _signature) external view override returns (bool) {
+    function checkUserVote(MatchStructs.UserVote calldata _user_vote, bytes calldata _signature) external pure override returns (bool) {
         bytes32 _hash = getUserVoteHash(_user_vote);
         return _hash.recover(_signature) == _user_vote.voter;
     }

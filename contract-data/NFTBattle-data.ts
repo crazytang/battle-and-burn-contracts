@@ -1,14 +1,14 @@
-// deployed_index: 62
-// deployed_at: 2023/08/03 18:11:43
+// deployed_index: 64
+// deployed_at: 2023/08/05 15:15:37
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattle',
-    address: '0xd19D8ad225f93299Cb6F872037646E3083b61f60',
-    proxy_address: '0xd19D8ad225f93299Cb6F872037646E3083b61f60',
-    target_address: '0x40DC3Fa14DA48349495eFbeaCc15a2c06768d800',
+    address: '0xF80058B10a4725C4c4e89E7BE9db12bB46b22652',
+    proxy_address: '0xF80058B10a4725C4c4e89E7BE9db12bB46b22652',
+    target_address: '0x958c17Daa1Fca6CF87FDa8964597aC4Fc1b9B2D7',
     libraries: [],
     abi:  [
     {
@@ -378,9 +378,9 @@ const NFTBattle_data: ProxyContractData = {
         {
           "components": [
             {
-              "internalType": "bytes",
+              "internalType": "bytes32",
               "name": "matchId",
-              "type": "bytes"
+              "type": "bytes32"
             },
             {
               "internalType": "address",
@@ -411,6 +411,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "uint256",
               "name": "votedAt",
               "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
             }
           ],
           "internalType": "struct MatchStructs.UserVote",
@@ -431,7 +436,7 @@ const NFTBattle_data: ProxyContractData = {
           "type": "bool"
         }
       ],
-      "stateMutability": "view",
+      "stateMutability": "pure",
       "type": "function"
     },
     {
@@ -1242,9 +1247,9 @@ const NFTBattle_data: ProxyContractData = {
         {
           "components": [
             {
-              "internalType": "bytes",
+              "internalType": "bytes32",
               "name": "matchId",
-              "type": "bytes"
+              "type": "bytes32"
             },
             {
               "internalType": "address",
@@ -1275,6 +1280,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "uint256",
               "name": "votedAt",
               "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "extraSignature",
+              "type": "bytes"
             }
           ],
           "internalType": "struct MatchStructs.UserVote",

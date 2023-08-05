@@ -45,13 +45,14 @@ library MatchStructs {
 
     // 用户投票
     struct UserVote {
-        bytes matchId; // 比赛ID
+        bytes32 matchId; // 比赛ID
         address voter; // 投票人
         address votedNFT; // 投票NFT地址
         uint256 votedTokenId; // 投票NFT的tokenId
         string votedJPG; // 投票NFT的JPG地址
         address votedJPGOwner; // 投票NFT的JPG持有人
         uint256 votedAt; // 投票时间
+        bytes extraSignature; // 额外签名
     }
 
     enum NFTType {

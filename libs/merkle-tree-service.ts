@@ -98,17 +98,19 @@ export class MerkleTreeService {
             user_vote.votedTokenId,
             user_vote.votedJPG,
             user_vote.votedJPGOwner,
-            user_vote.votedAt
+            user_vote.votedAt,
+            user_vote.extraSignature
         ]
 
         const encode_types = [
-            'bytes',
+            'bytes32',
             'address',
             'address',
             'uint256',
             'string',
             'address',
-            'uint256'
+            'uint256',
+            'bytes'
         ]
 
         return [leaf, encode_types]
@@ -126,18 +128,20 @@ export class MerkleTreeService {
                     result.votedTokenId,
                     result.votedJPG,
                     result.votedJPGOwner,
-                    result.votedAt
+                    result.votedAt,
+                    result.extraSignature
                 ]
             )
         }
         const encode_types = [
-            'bytes',
+            'bytes32',
             'address',
             'address',
             'uint256',
             'string',
             'address',
-            'uint256'
+            'uint256',
+            'bytes',
         ]
 
         return [leaves, encode_types]
@@ -158,6 +162,14 @@ export class MerkleTreeService {
         return MerkleTreeService.bytesToHexString(keccak256(keccak256(hexToBytes(defaultAbiCoder.encode(t1, leaf_hash)))))
 
     }*/
+
+    static generateHashedLeaf = (leaf: any, encode_types: string[]): string => {
+        return MerkleTreeService.bytesToHexString(
+            keccak256(
+                keccak256(hexToBytes(defaultAbiCoder.encode(encode_types, leaf))),
+            ),
+        );
+    };
 
     private static bytesToHexString(uint8a: Bytes): string {
         // pre-caching improves the speed 6x

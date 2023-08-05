@@ -40,7 +40,6 @@ import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParams
 import {DistributionStructs, MatchStructs as MatchStructs2} from "../../typechain-types/NFTBattle";
 import UserVoteStruct = MatchStructs2.UserVoteStruct;
 import {fetchToMatchData, fetchToNFTData, MatchData, NFTData} from "../../helpers/contract/structs";
-import {randomHash} from "hardhat/internal/hardhat-network/provider/utils/random";
 import CreationNFTParamsStruct = DistributionStructs.CreationNFTParamsStruct;
 import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
@@ -556,8 +555,6 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
     user1_nft: CreationNFT|Contract|null
     user2_nft: CreationNFT|Contract|null
 }> => {
-    const match_id:string = randomHash()
-    console.log('match_id', match_id)
 
     console.log('participant1 address', user1_wallet.address)
     console.log('participant2 address', user2_wallet.address)
@@ -650,9 +647,10 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         expect(user2_nft_owner_in_contract).to.equal(user2_nft_owner)
     }
 
+
     // 3) 创建比赛数据
     const match_data: MatchData = {
-        matchId: match_id,
+        matchId: ethers.constants.HashZero,
         matchStartTime: nowTimestamp(),
         matchEndTime: nowTimestamp() +  60 * 3,
         voteCount: 0,
@@ -673,6 +671,11 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         merkleTreeRoot: ethers.constants.HashZero,
         burnedAt: 0
     }
+
+    const match_id:string = solidityKeccak256(['uint256', 'string', 'address', 'address', 'uint256' ], [match_data.matchStartTime, match_data.arenaJPG, match_data.arenaJPGOwner, match_data.arenaNFT, match_data.arenaTokenId])
+    console.log('match_id', match_id)
+
+    match_data.matchId = match_id
 
     const arena_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner])))
     match_data.arenaOwnerSignature = signMessageByWallet(user1_wallet, arena_hash)
@@ -698,14 +701,19 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         votedTokenId: numberToBn(match_data.arenaTokenId, 0),
         votedJPG: match_data.arenaJPG,
         votedJPGOwner: match_data.arenaJPGOwner,
-        votedAt: numberToBn(nowTimestamp(), 0)
+        votedAt: numberToBn(nowTimestamp(), 0),
+        extraSignature: ethers.constants.HashZero
     }
 
-    console.log('user_vote', user_vote)
     match_data.voteCount++
     match_data.voteArenaCount++
 
     const types = ['bytes']
+
+    let admin_hash_user_vote = MerkleTreeService.generateHashedLeaf([user_vote.matchId, user_vote.voter, user_vote.votedNFT, user_vote.votedTokenId, user_vote.votedJPG, user_vote.votedJPGOwner, user_vote.votedAt], ['bytes32', 'address', 'address', 'uint256', 'string', 'address', 'uint256'])
+    user_vote.extraSignature = signMessageByWallet(admin_wallet, admin_hash_user_vote)
+
+    console.log('user_vote', user_vote)
 
     const hash_user_vote1 = MerkleTreeService.hashUserVote(user_vote)
     const hash_user_vote1_in_contract = await nft_battle.getUserVoteHash(user_vote)
@@ -742,18 +750,22 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         votedTokenId: numberToBn(match_data.arenaTokenId),
         votedJPG: match_data.arenaJPG,
         votedJPGOwner: match_data.arenaJPGOwner,
-        votedAt: numberToBn(nowTimestamp(), 0)
+        votedAt: numberToBn(nowTimestamp(), 0),
+        extraSignature: ethers.constants.HashZero
     }
 
     match_data.voteCount++
     match_data.voteArenaCount++
+
+    admin_hash_user_vote = MerkleTreeService.generateHashedLeaf([user_vote2.matchId, user_vote2.voter, user_vote2.votedNFT, user_vote2.votedTokenId, user_vote2.votedJPG, user_vote2.votedJPGOwner, user_vote2.votedAt], ['bytes32', 'address', 'address', 'uint256', 'string', 'address', 'uint256'])
+    user_vote2.extraSignature = signMessageByWallet(admin_wallet, admin_hash_user_vote)
 
     const hash_user_vote2 = MerkleTreeService.hashUserVote(user_vote2)
     const signed_hash_user_vote2 = signMessageByWallet(user2_wallet, hash_user_vote2)
     expect(recoverAddressFromSignedMessage(hash_user_vote2, signed_hash_user_vote2)).to.equal(user2_wallet.address)
 
     rs = await nft_battle.checkUserVote(user_vote2, signed_hash_user_vote2)
-    console.log('rs', rs)
+    // console.log('rs', rs)
     expect(rs).to.equal(true)
 
     leaves = MerkleTreeService.leavesLoadFromJson(ipfs_file_content)
@@ -781,11 +793,15 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         votedTokenId: numberToBn(match_data.challengeTokenId),
         votedJPG: match_data.challengeJPG,
         votedJPGOwner: match_data.challengeJPGOwner,
-        votedAt: numberToBn(nowTimestamp(), 0)
+        votedAt: numberToBn(nowTimestamp(), 0),
+        extraSignature: ethers.constants.HashZero
     }
 
     match_data.voteCount++
     match_data.voteChallengeCount++
+
+    admin_hash_user_vote = MerkleTreeService.generateHashedLeaf([user_vote3.matchId, user_vote3.voter, user_vote3.votedNFT, user_vote3.votedTokenId, user_vote3.votedJPG, user_vote3.votedJPGOwner, user_vote3.votedAt], ['bytes32', 'address', 'address', 'uint256', 'string', 'address', 'uint256'])
+    user_vote3.extraSignature = signMessageByWallet(admin_wallet, admin_hash_user_vote)
 
     const hash_user_vote3 = MerkleTreeService.hashUserVote(user_vote3)
     const signed_hash_user_vote3 = signMessageByWallet(user3_wallet, hash_user_vote3)
