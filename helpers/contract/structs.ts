@@ -131,3 +131,31 @@ export const fetchToMatchData = (data: any): MatchData => {
         burnedAt: bnToNoPrecisionNumber(data['burnedAt'])
     }
 }
+
+export interface BidPoolUserStakedData {
+    userAddress: string
+    nftStakedDataList: NFTStakedData[]
+    balance: number
+}
+
+export interface NFTStakedData {
+    nftAddress: string
+    tokenId : number
+    amount: number
+}
+
+export const fetchToBidPoolUserStakedData = (data: any): BidPoolUserStakedData => {
+    let nftStakedDataList = []
+    for (let i = 0; i < data['nftStakedDataList'].length; i++) {
+        nftStakedDataList.push({
+            nftAddress: data['nftStakedDataList'][i]['nftAddress'],
+            tokenId: bnToNoPrecisionNumber(data['nftStakedDataList'][i]['tokenId']),
+            amount: bnToNoPrecisionNumber(data['nftStakedDataList'][i]['amount'])
+        })
+    }
+    return {
+        userAddress: data['userAddress'],
+        nftStakedDataList: nftStakedDataList,
+        balance: bnToNumber(data['balance'])
+    }
+}

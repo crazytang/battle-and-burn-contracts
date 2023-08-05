@@ -45,6 +45,8 @@ contract AggressiveBidDistribution is IAggressiveBidDistribution, Initializable,
         require(_bid_royalty_rate < denominator, "AggressiveBidDistribution: invalid royalty rate");
 
         bid_royalty_rate = _bid_royalty_rate;
+
+        emit SetBidRoyaltyRate(_bid_royalty_rate);
     }
 
     function addToDailyReward(uint256 _timestamp) public payable override nonReentrant whenNotPaused {
@@ -55,6 +57,8 @@ contract AggressiveBidDistribution is IAggressiveBidDistribution, Initializable,
         user_rewards[address(0)].claimable_amount += msg.value;
 
         _integrity();
+
+        emit AddedToDailyReward(msg.sender, _date, msg.value);
     }
 
     function distributeDaily(AggressiveBidDistributionStructs.ClaimRewardParams calldata _claim_reward_params) external nonReentrant whenNotPaused {
@@ -83,6 +87,8 @@ contract AggressiveBidDistribution is IAggressiveBidDistribution, Initializable,
         user_rewards[address(0)].claimable_amount -= _claimed_total_amount;
 
         _integrity();
+
+        emit DistributedDaily(msg.sender, _date, _claimed_total_amount, _claim_reward_params.reward_users, _claim_reward_params.reward_amounts);
     }
 
     function claim() external nonReentrant whenNotPaused {
@@ -98,7 +104,11 @@ contract AggressiveBidDistribution is IAggressiveBidDistribution, Initializable,
         (bool success,) = payable(msg.sender).call{value: _claimable_amount}("");
         require(success, "AggressiveBidDistribution: Transfer failed");
 
+        _removeUserIfClaimed(msg.sender);
+
         _integrity();
+
+        emit Claimed(msg.sender, _claimable_amount);
     }
 
     function getUserClaimableAmount(address _user_address) external view override returns (uint256) {
@@ -119,6 +129,18 @@ contract AggressiveBidDistribution is IAggressiveBidDistribution, Initializable,
         }
         if (!is_exist) {
             reward_users.push(_user_address);
+        }
+    }
+
+    function _removeUserIfClaimed(address _user_address) private {
+        if (user_rewards[_user_address].claimable_amount == 0) {
+            for (uint256 i = 0; i < reward_users.length; i++) {
+                if (reward_users[i] == _user_address) {
+                    reward_users[i] = reward_users[reward_users.length - 1];
+                    reward_users.pop();
+                    break;
+                }
+            }
         }
     }
 

@@ -4,19 +4,20 @@ import {bnToNumber, getTransactionOptions, setDefaultGasOptions} from "../../hel
 import {ethers} from "hardhat";
 import {deploy_proxy_contract} from "../../helpers/contract/deploy-proxy-contract-to-files";
 import NFTBattle_data from "../../contract-data/NFTBattle-data";
+import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
+import AggressiveBid_data from "../../contract-data/AggressiveBid-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
-const contract_name = 'AggressiveBidDistribution'
+const contract_name = 'AggressiveBidPool'
 
 async function main() {
     await setDefaultGasOptions(provider)
 
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
-    const bid_royalty_rate = 401 // 4.01%
-    const initialize_function = 'initialize(uint96)'
-    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [bid_royalty_rate])
+    const initialize_function = 'initialize(address,address)'
+    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [NFTBattlePool_data.address, AggressiveBid_data.address])
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 

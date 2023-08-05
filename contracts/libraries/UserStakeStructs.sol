@@ -15,10 +15,14 @@ library UserStakeStructs {
 
     struct BidPoolUserStakedData {
         address userAddress;
+        NFTStakedData[] nftStakedDataList;
+        uint256 balance;
+    }
+
+    struct NFTStakedData {
         address nftAddress;
         uint256 tokenId;
         uint256 amount;
-        uint256 stakedAt;
     }
 
     struct ApprovalData {

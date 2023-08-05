@@ -71,9 +71,9 @@ export const deploy_proxy_contract = async function (contract_name: string, admi
         let p = ''
         if (initialize_args.length > 0) {
             for (let i = 0; i < initialize_args.length; i++) {
-                p += ethers.utils.hexZeroPad(ethers.utils.hexValue(initialize_args[i]), 32)
+                p += ethers.utils.hexZeroPad(ethers.utils.hexValue(initialize_args[i]), 32).replace(/^0x/, '')
             }
-            call_data = ethers.utils.hexConcat([method_selector, p]);
+            call_data = ethers.utils.hexConcat([method_selector, '0x'+p]);
         } else {
             call_data = ethers.utils.hexConcat([method_selector])
         }
