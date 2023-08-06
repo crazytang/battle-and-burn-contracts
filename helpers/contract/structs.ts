@@ -3,6 +3,10 @@ import UserRewardDataStructOutput = DistributionStructs.UserRewardDataStructOutp
 import {BigNumber} from "ethers";
 import {bnToDate, bnToNoPrecisionNumber, bnToNumber} from "./contract-utils";
 import DistributionRoleStructOutput = DistributionStructs.DistributionRoleStructOutput;
+import {AggressiveBidStructs} from "../../typechain-types/AggressiveBid";
+import OrderStruct = AggressiveBidStructs.OrderStruct;
+import InputStruct = AggressiveBidStructs.InputStruct;
+import MerkleTreeStruct = AggressiveBidStructs.MerkleTreeStruct;
 
 export interface DistributionData {
     creator: string
@@ -158,4 +162,33 @@ export const fetchToBidPoolUserStakedData = (data: any): BidPoolUserStakedData =
         nftStakedDataList: nftStakedDataList,
         balance: bnToNumber(data['balance'])
     }
+}
+
+
+export enum OrderSide {
+    BUY, SELL
+}
+
+export enum OrderType {
+    FixedPrice, EnglishAuction, DutchAuction
+}
+
+export enum AssetType {ERC721, ERC1155}
+
+export interface Order extends OrderStruct {
+    tokenId_dec: number
+    amount_dec: number
+    price_dec: number
+    listingTime_date: string
+    expirationTime_date: string
+    extraParams_obj: any
+}
+
+export interface InputData extends InputStruct {
+    order: OrderStruct;
+    v: number;
+    r: string;
+    s: string;
+    merkleTree: MerkleTreeStruct;
+    blockNumber: BigNumber;
 }

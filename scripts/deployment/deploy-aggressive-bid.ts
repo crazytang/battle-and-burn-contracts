@@ -6,24 +6,34 @@ import {deploy_proxy_contract} from "../../helpers/contract/deploy-proxy-contrac
 import NFTBattle_data from "../../contract-data/NFTBattle-data";
 import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
 import AggressiveBid_data from "../../contract-data/AggressiveBid-data";
+import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
+import AggressiveBidDistribution_data from "../../contract-data/AggressiveBidDistribution-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
-const contract_name = 'AggressiveBidPool'
+const contract_name = 'AggressiveBid'
 
 async function main() {
     await setDefaultGasOptions(provider)
 
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
-    const initialize_function = 'initialize(address)'
-    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [NFTBattlePool_data.address])
+    const initialize_function = 'initialize(address,address)'
+    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [AggressiveBidDistribution_data.address, AggressiveBidPool_data.address])
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
-    const aggressive_bid_address = await new_contract_proxy_contract.aggressive_bid()
-    if (AggressiveBid_data.address != '' && aggressive_bid_address !== AggressiveBid_data.address) {
-        const tx = await new_contract_proxy_contract.setAggressiveBid(AggressiveBid_data.address, getTransactionOptions())
+    const verifier_address = await new_contract_proxy_contract.verifier_address()
+    if (verifier_address !== admin_wallet.address) {
+        const tx = await new_contract_proxy_contract.setVerifierAddress(admin_wallet.address, getTransactionOptions())
+        console.log('setVerifier() tx:', tx.hash)
+        await tx.wait()
+    }
+
+    const aggressive_bid_pool = await ethers.getContractAt('AggressiveBidPool', AggressiveBidPool_data.address, admin_wallet)
+    const aggressive_bid_address_in_pool = await aggressive_bid_pool.aggressive_bid()
+    if (aggressive_bid_address_in_pool !== new_contract_proxy_contract.address) {
+        const tx = await aggressive_bid_pool.setAggressiveBid(new_contract_proxy_contract.address, getTransactionOptions())
         console.log('setAggressiveBid() tx:', tx.hash)
         await tx.wait()
     }

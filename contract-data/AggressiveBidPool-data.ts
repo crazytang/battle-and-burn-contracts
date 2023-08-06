@@ -1,14 +1,14 @@
-// deployed_index: 9
-// deployed_at: 2023/08/05 20:51:31
+// deployed_index: 12
+// deployed_at: 2023/08/06 17:46:36
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBidPool_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'AggressiveBidPool',
-    address: '0xdb4AC401755680CB6253B0e64B47356Ca7b831ba',
-    proxy_address: '0xdb4AC401755680CB6253B0e64B47356Ca7b831ba',
-    target_address: '0x53Dd7Ef17340183757676C4Bad7f172A0932b1C4',
+    address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
+    proxy_address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
+    target_address: '0xF59bf9E81F457cb424C88c605a8324A1d0Aa89dd',
     libraries: [],
     abi:  [
     {
@@ -188,9 +188,58 @@ const AggressiveBidPool_data: ProxyContractData = {
           "internalType": "uint256",
           "name": "amount",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "royalty_receiver",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "royalty_amount",
+          "type": "uint256"
         }
       ],
-      "name": "TransferFrom",
+      "name": "TransferedETHFrom",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "nft_address",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "TransferedNFTFrom",
       "type": "event"
     },
     {
@@ -322,11 +371,6 @@ const AggressiveBidPool_data: ProxyContractData = {
         {
           "internalType": "address",
           "name": "_nft_battle_pool",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_aggressive_bid",
           "type": "address"
         }
       ],
@@ -526,9 +570,52 @@ const AggressiveBidPool_data: ProxyContractData = {
           "internalType": "uint256",
           "name": "_amount",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_royalty_receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_royalty_amount",
+          "type": "uint256"
         }
       ],
-      "name": "transferFrom",
+      "name": "transferETHFrom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferNFTFrom",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

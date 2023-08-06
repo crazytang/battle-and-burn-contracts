@@ -43,6 +43,7 @@ import {fetchToMatchData, fetchToNFTData, MatchData, NFTData} from "../../helper
 import CreationNFTParamsStruct = DistributionStructs.CreationNFTParamsStruct;
 import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
+import {deployCreationNFT} from "../../helpers/mock-functions";
 
 
 let tx: ContractTransaction
@@ -541,6 +542,7 @@ const saveAndUploadIPFS = async (ipfs_file_content: string): Promise<string> => 
     return ipfs_file
 }
 
+/*
 const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: string, baseURI:string, distributionParams: DistributionRoleParamsStruct): Promise<Contract> => {
     const contract_name = 'CreationNFT'
     let contract_data = await import('../../data/compiled-data/CreationNFT.json')
@@ -549,6 +551,7 @@ const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: str
     const new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
     return await new_contract.deployed()
 }
+*/
 
 const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG='', challengeJPG=''): Promise<{
     match_data: MatchData

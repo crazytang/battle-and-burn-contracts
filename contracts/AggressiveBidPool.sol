@@ -1,5 +1,5 @@
-// ##deployed index: 9
-// ##deployed at: 2023/08/05 20:51:31
+// ##deployed index: 12
+// ##deployed at: 2023/08/06 17:46:36
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
@@ -18,8 +18,9 @@ import "./interfaces/IAggressiveBid.sol";
 
 contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
-    INFTBattlePool public nft_battle_pool;
+    INFTBattlePool public override nft_battle_pool;
     IAggressiveBid public override aggressive_bid;
+
 
     bytes4 private constant INTERFACE_ID_APPROVEBYSIG = 0xc06dfe6c; // IApproveBySig.approveBySig.selector
 
@@ -33,16 +34,13 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
     }
 
     /// @notice This method is called by the proxy contract to initialize the contract.
-    function initialize(address _nft_battle_pool, address _aggressive_bid) public initializer {
+    function initialize(address _nft_battle_pool) public initializer {
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
 
         require(Address.isContract(_nft_battle_pool), "AggressiveBidPool: nft_battle_address is not a contract");
-        require(Address.isContract(_aggressive_bid), "AggressiveBidPool: aggressive_bid_address is not a contract");
-
         nft_battle_pool = INFTBattlePool(_nft_battle_pool);
-        aggressive_bid = IAggressiveBid(_aggressive_bid);
     }
 
     function pause() external onlyOwner {
@@ -131,12 +129,46 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
     /// @param _from 发送地址
     /// @param _to 接收地址
     /// @param _amount 转账数量
-    function transferFrom(address _from, address _to, uint256 _amount) external override OnlyAggressiveBid whenNotPaused {
+    /// @param _royalty_receiver 交易费接收地址
+    /// @param _royalty_amount 交易费数量
+    function transferETHFrom(address _from, address _to, uint256 _amount, address _royalty_receiver, uint256 _royalty_amount) external override OnlyAggressiveBid whenNotPaused {
         require(users_staked_data[_from].balance >= _amount, "AggressiveBidPool: insufficient ETH balance for transferFrom");
-        users_staked_data[_from].balance -= _amount;
-        users_staked_data[_to].balance += _amount;
+        require(_amount > _royalty_amount, "AggressiveBidPool: royalty_amount is greater than amount");
+        require(_royalty_receiver != address(0), "AggressiveBidPool: royalty_address is zero");
 
-        emit TransferFrom(_from, _to, _amount);
+        users_staked_data[_from].balance -= _amount;
+        users_staked_data[_to].balance += _amount - _royalty_amount;
+
+        (bool success,) = payable(_royalty_receiver).call{value: _royalty_amount}("");
+        require(success, "AggressiveBidPool: Transfer failed");
+
+        _integrityCheck();
+        emit TransferedETHFrom(_from, _to, _amount, _royalty_receiver, _royalty_amount);
+    }
+
+    /// @notice 池内转账NFT
+    /// @param _from 发送地址
+    /// @param _to 接收地址
+    /// @param _nft_address NFT地址
+    /// @param _tokenId NFT ID
+    /// @param _amount 转账数量
+    function transferNFTFrom(address _from, address _to, address _nft_address, uint256 _tokenId, uint256 _amount) external override OnlyAggressiveBid whenNotPaused {
+        require(_nft_address != address(0), "AggressiveBidPool: NFT address is zero");
+        require(_from != address(0), "AggressiveBidPool: _from address is zero");
+        require(_to != address(0), "AggressiveBidPool: _to address is zero");
+        require(_from != _to, "AggressiveBidPool: _from address is equal to _to address");
+        require(_amount == 1, "AggressiveBidPool: _amount is not equal to 1");
+
+        UserStakeStructs.BidPoolUserStakedData memory _from_user_staked_data = users_staked_data[_from];
+//        UserStakeStructs.BidPoolUserStakedData memory _to_user_staked_data = users_staked_data[_to];
+
+        require(_userHasStakedNFT(_from_user_staked_data, _nft_address, _tokenId), "AggressiveBidPool: User has no staked NFT");
+
+        _removeUserNFTStakedData(_from, _nft_address, _tokenId, false);
+
+        _setUserNFTStakedData(_to, _nft_address, _tokenId);
+
+        emit TransferedNFTFrom(_from, _to, _nft_address, _tokenId, _amount);
     }
 
     function getUserStakedData(address _user) external view override returns (UserStakeStructs.BidPoolUserStakedData memory) {
@@ -242,6 +274,10 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
     }
 
     function _removeUserNFTStakedData(address _user, address _nft_address, uint256 _tokenId) private {
+        _removeUserNFTStakedData(_user, _nft_address, _tokenId, true);
+    }
+
+    function _removeUserNFTStakedData(address _user, address _nft_address, uint256 _tokenId, bool _integrity_check) private {
         for (uint256 i = 0; i < users_staked_data[_user].nftStakedDataList.length; i++) {
             UserStakeStructs.NFTStakedData memory _nft_staked_data = users_staked_data[_user].nftStakedDataList[i];
             if (_nft_staked_data.nftAddress == _nft_address
@@ -255,7 +291,9 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
 
         _removeUserIfAssetIsEmpty(_user);
 
-        _integrityCheck();
+        if (_integrity_check) {
+            _integrityCheck();
+        }
     }
 
     function _userHasStakedNFT(UserStakeStructs.BidPoolUserStakedData memory _user_staked_data, address _nft_address, uint256 _tokenId) private pure returns (bool) {

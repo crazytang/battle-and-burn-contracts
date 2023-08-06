@@ -36,6 +36,7 @@ import {BidPoolUserStakedData, fetchToBidPoolUserStakedData} from "../../helpers
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import {DistributionStructs} from "../../typechain-types/CreationNFT";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
+import {deployCreationNFT} from "../../helpers/mock-functions";
 
 let tx: ContractTransaction
 let receipt: ContractReceipt
@@ -201,12 +202,3 @@ describe("Creation NFT testing", function () {
         expect(user1_staked_data_after2.balance).equal(user1_staked_data_after.balance - user1_deposit_amount)
     })
 })
-
-const deployCreationNFT = async (admin_wallet: Wallet, name: string, symbol: string, baseURI:string, distributionParams: DistributionRoleParamsStruct): Promise<Contract> => {
-    const contract_name = 'CreationNFT'
-    let contract_data = await import('../../data/compiled-data/CreationNFT.json')
-    let contract_factory = new ethers.ContractFactory(contract_data.abi, contract_data.bytecode, admin_wallet)
-    // contract_factory = contract_factory.connect(admin_wallet)
-    const new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
-    return await new_contract.deployed()
-}

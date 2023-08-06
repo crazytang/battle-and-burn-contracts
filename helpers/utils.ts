@@ -31,6 +31,10 @@ export const datetime_format = function (datetime: Date, fmt: string): string {
     return fmt
 }
 
+/**
+ * 获取当前的时间戳
+ * @return number
+ */
 export const nowTimestamp = function (): number {
     return Math.floor(Date.now() / 1000)
 }
