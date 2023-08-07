@@ -28,5 +28,6 @@ interface IAggressiveBidPool {
     function transferNFTFrom(address _from, address _to, address _nft_address, uint256 _tokenId, uint256 _amount) external;
 
     function getUserStakedData(address _user) external view returns (UserStakeStructs.BidPoolUserStakedData memory);
+    function getNFTOwner(address _nft_address, uint256 _tokenId) external view returns (address);
     function getUserBalance(address _user) external view returns (uint256);
 }

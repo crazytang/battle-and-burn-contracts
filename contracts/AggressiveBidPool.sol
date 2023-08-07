@@ -1,5 +1,5 @@
-// ##deployed index: 12
-// ##deployed at: 2023/08/06 17:46:36
+// ##deployed index: 13
+// ##deployed at: 2023/08/07 17:12:50
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
@@ -174,6 +174,24 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
     function getUserStakedData(address _user) external view override returns (UserStakeStructs.BidPoolUserStakedData memory) {
         return users_staked_data[_user];
     }
+
+    /// @notice 获取NFT的拥有者
+    /// @param _nft_address NFT地址
+    /// @param _tokenId NFT的tokenId
+    /// @return NFT的拥有者地址
+    function getNFTOwner(address _nft_address, uint256 _tokenId) external view override returns (address) {
+        for (uint256 i=0; i<users.length; i++) {
+            UserStakeStructs.NFTStakedData[] memory nftStakedDataList = users_staked_data[users[i]].nftStakedDataList;
+            for (uint256 j=0; j<nftStakedDataList.length; j++) {
+                if (nftStakedDataList[j].nftAddress == _nft_address && nftStakedDataList[j].tokenId == _tokenId && nftStakedDataList[j].amount > 0) {
+                    return users[i];
+                }
+            }
+        }
+
+        return address(0);
+    }
+
 
     /// @notice 获取用户的ETH余额
     /// @param _user 用户地址

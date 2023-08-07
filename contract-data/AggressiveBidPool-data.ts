@@ -1,5 +1,5 @@
-// deployed_index: 12
-// deployed_at: 2023/08/06 17:46:36
+// deployed_index: 13
+// deployed_at: 2023/08/07 17:12:50
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBidPool_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const AggressiveBidPool_data: ProxyContractData = {
     contract_name: 'AggressiveBidPool',
     address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
     proxy_address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
-    target_address: '0xF59bf9E81F457cb424C88c605a8324A1d0Aa89dd',
+    target_address: '0xC3d5847E45D512888E2d3c4a8399491fD26f3800',
     libraries: [],
     abi:  [
     {
@@ -292,6 +292,30 @@ const AggressiveBidPool_data: ProxyContractData = {
       "name": "deposit",
       "outputs": [],
       "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getNFTOwner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
