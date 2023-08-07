@@ -26,9 +26,13 @@ async function main() {
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
-    tx = await new_contract_proxy_contract.setVerifierAddress(admin_wallet.address, getTransactionOptions())
-    console.log('new_contract_proxy_contract.setVerifierAddress() tx', tx.hash)
-    await tx.wait()
+    const verifier_address = await new_contract_proxy_contract.verifier_address()
+    if (verifier_address !== admin_wallet.address) {
+        tx = await new_contract_proxy_contract.setVerifierAddress(admin_wallet.address, getTransactionOptions())
+        console.log('new_contract_proxy_contract.setVerifierAddress() tx', tx.hash)
+        await tx.wait()
+    }
+
 
     if (NFTBattlePool_data !== undefined && NFTBattlePool_data.address !== '') {
         const nft_battle_pool_address = await new_contract_proxy_contract.nft_battle_pool()
@@ -40,7 +44,7 @@ async function main() {
 
         const nft_battle_pool = await ethers.getContractAt('NFTBattlePool', NFTBattlePool_data.address, admin_wallet)
         const nft_battle_in_pool = await nft_battle_pool.nft_battle_address()
-        if (nft_battle_in_pool !== new_contract.address) {
+        if (nft_battle_in_pool !== new_contract_proxy_contract.address) {
             tx = await nft_battle_pool.setNFTBattle(new_contract_proxy_contract.address, getTransactionOptions())
             console.log('nft_battle_pool.setNFTBattle() tx', tx.hash)
             await tx.wait()
