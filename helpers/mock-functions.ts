@@ -1,5 +1,5 @@
 
-import {getTransactionOptions, numberToBn} from "./contract/contract-utils";
+import {getTransactionOptions, numberToBn, signMessageByWallet, solidityAbiEncode} from "./contract/contract-utils";
 import {BigNumber, Contract, ethers, Wallet} from "ethers";
 import {MerkleTreeService} from "../libs/merkle-tree-service";
 import {joinSignature} from "@ethersproject/bytes";
@@ -9,6 +9,7 @@ import {AssetType, InputData, OrderSide, OrderType} from "./contract/structs";
 import DistributionPolicyV1_data from "../contract-data/DistributionPolicyV1-data";
 import {DistributionStructs} from "../typechain-types/NFTBattle";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
+import {keccak256} from "@ethersproject/keccak256";
 
 export const makeNewOrder = (trader_address: string, side: OrderSide, orderType: OrderType, collection_address: string, assetType: AssetType, tokenId: number, amount: number, price: number, nonce: number, payment_token = ethers.constants.AddressZero): OrderStruct => {
     const now_timestamp = Math.floor((new Date()).getTime() / 1000)
@@ -89,7 +90,8 @@ export const makeInputDataFromOrdersWithMerkleTree = async (order: OrderStruct, 
 
     const signature = await user_wallet._signingKey().signDigest(order_hash)
 
-    const extraSignature: string = joinSignature(await verifier_wallet._signingKey().signDigest(order_hash))
+    // const extraSignature: string = joinSignature(await verifier_wallet._signingKey().signDigest(order_hash))
+    const extraSignature: string = orderSignByVerifier(order, verifier_wallet)
     // 需要建立merkle tree
     if (order.orderType !== OrderType.FixedPrice) {
 
@@ -106,6 +108,12 @@ export const makeInputDataFromOrdersWithMerkleTree = async (order: OrderStruct, 
         },
         blockNumber: BigNumber.from('0'),
     }
+}
+
+export const orderSignByVerifier = (order: OrderStruct, verifier_wallet: Wallet): string => {
+    const [order_leaf, t1] = orderToLeaf(order)
+    const order_hash = keccak256(keccak256(solidityAbiEncode(t1, order_leaf)))
+    return signMessageByWallet(verifier_wallet, order_hash)
 }
 
 export const orderToLeaf = (order: OrderStruct): [any[], string[]] => {
