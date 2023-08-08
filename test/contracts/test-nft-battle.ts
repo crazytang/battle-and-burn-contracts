@@ -1,4 +1,4 @@
-import {BigNumberish, BytesLike, Contract, ContractReceipt, ContractTransaction, Wallet} from "ethers";
+import {BigNumber, BigNumberish, BytesLike, Contract, ContractReceipt, ContractTransaction, Wallet} from "ethers";
 import {ethers} from "ethers"
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
@@ -14,7 +14,7 @@ import {
     numberToBn,
     recoverAddressFromSignedMessage,
     setDefaultGasOptions, signMessageAndSplitByWallet,
-    signMessageByWallet, solidityAbiEncode
+    signMessageByWallet, sleep, solidityAbiEncode
 } from "../../helpers/contract/contract-utils";
 import CreationNFT_data from "../../contract-data/CreationNFT-data";
 import {
@@ -124,6 +124,8 @@ describe("NFTBattle.sol testing", function () {
         const old_loser_ko_score = bnToNoPrecisionNumber(await nft_battle.getNFTKOScore(loser_nft, loser_token_id))
         console.log('old_loser_ko_score', old_loser_ko_score)
 
+        console.log('wait for 10 seconds')
+        await sleep(10000) // wait for 10 seconds
         // to redeem nft or not
         const redeem_nft = false
         tx = await nft_battle.determine(match_data, redeem_nft, getTransactionOptions())
@@ -231,6 +233,9 @@ describe("NFTBattle.sol testing", function () {
                 distribution_policy_address: ethers.constants.AddressZero,
             }
         }
+
+        console.log('wait for 10 seconds')
+        await sleep(10000) // wait for 10 seconds
 
         tx = await nft_battle.determineIncludeJPG(match_data, creation_nft_params, redeem_nft, getTransactionOptions())
         console.log('nft_battle.determineIncludeJPG() tx', tx.hash)
@@ -360,6 +365,8 @@ describe("NFTBattle.sol testing", function () {
             }
         }
 
+        console.log('wait for 10 seconds')
+        await sleep(10000) // wait for 10 seconds
         tx = await nft_battle.determineIncludeJPGBySys(match_data, creation_nft_params, getTransactionOptions())
         console.log('nft_battle.determineIncludeJPGBySys() tx', tx.hash)
         await tx.wait()
@@ -476,6 +483,9 @@ describe("NFTBattle.sol testing", function () {
         expect(old_winner_user_staked_data.beneficiaryAddress).to.equal(ethers.constants.AddressZero)
 
         // 5) 由系统决定胜负，冻结胜利者的NFT
+        console.log('wait for 10 seconds')
+        await sleep(10000) // wait for 10 seconds
+
         tx = await nft_battle.determineBySys(match_data, getTransactionOptions())
         console.log('nft_battle.determineBySys() tx', tx.hash)
         await tx.wait()
@@ -650,12 +660,12 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         expect(user2_nft_owner_in_contract).to.equal(user2_nft_owner)
     }
 
-
     // 3) 创建比赛数据
     const match_data: MatchData = {
         matchId: ethers.constants.HashZero,
-        matchStartTime: nowTimestamp(),
-        matchEndTime: nowTimestamp() +  60 * 3,
+        matchListTime: nowTimestamp(),
+        matchStartTime: 0,
+        matchEndTime: 0,
         voteCount: 0,
         voteArenaCount: 0,
         voteChallengeCount: 0,
@@ -675,17 +685,20 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         burnedAt: 0
     }
 
-    const match_id:string = solidityKeccak256(['uint256', 'string', 'address', 'address', 'uint256' ], [match_data.matchStartTime, match_data.arenaJPG, match_data.arenaJPGOwner, match_data.arenaNFT, match_data.arenaTokenId])
+    const match_id:string = solidityKeccak256(['uint256', 'string', 'address', 'address', 'uint256' ], [match_data.matchListTime, match_data.arenaJPG, match_data.arenaJPGOwner, match_data.arenaNFT, match_data.arenaTokenId])
     console.log('match_id', match_id)
 
     match_data.matchId = match_id
 
-    const arena_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner])))
+    const arena_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchListTime, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner])))
     match_data.arenaOwnerSignature = signMessageByWallet(user1_wallet, arena_hash)
 
-    const challenge_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner])))
+    // 开始比赛
+    match_data.matchStartTime = nowTimestamp()
+    match_data.matchEndTime = nowTimestamp() +  10
+    const challenge_hash = keccak256(keccak256(solidityAbiEncode(['bytes32', 'uint256', 'uint256', 'uint256', 'address', 'uint256', 'string', 'address'], [match_data.matchId, match_data.matchListTime, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner])))
     match_data.challengeOwnerSignature = signMessageByWallet(user2_wallet, challenge_hash)
-    // console.log('match_data', match_data)
+    console.log('match_data', match_data)
 
     // 检查签名
     const [arena_sign, challenge_sign] = await nft_battle.checkArenaAndChallengeSignatures(match_data)
@@ -701,10 +714,10 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
         matchId: match_id,
         voter: voter,
         votedNFT: match_data.arenaNFT,
-        votedTokenId: numberToBn(match_data.arenaTokenId, 0),
+        votedTokenId: numberToBn(match_data.arenaTokenId, 0).toString(),
         votedJPG: match_data.arenaJPG,
         votedJPGOwner: match_data.arenaJPGOwner,
-        votedAt: numberToBn(nowTimestamp(), 0),
+        votedAt: numberToBn(nowTimestamp(), 0).toString(),
         extraSignature: ethers.constants.HashZero
     }
 
@@ -713,7 +726,16 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
 
     const types = ['bytes']
 
+    console.log('user_vote', user_vote)
     let admin_hash_user_vote = MerkleTreeService.generateHashedLeaf([user_vote.matchId, user_vote.voter, user_vote.votedNFT, user_vote.votedTokenId, user_vote.votedJPG, user_vote.votedJPGOwner, user_vote.votedAt], ['bytes32', 'address', 'address', 'uint256', 'string', 'address', 'uint256'])
+    // console.log('admin_hash_user_vote', admin_hash_user_vote)
+
+    const hh = solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'string', 'address', 'uint256'], [user_vote.matchId, user_vote.voter, user_vote.votedNFT, user_vote.votedTokenId, user_vote.votedJPG, user_vote.votedJPGOwner, user_vote.votedAt])
+    // console.log('hh', hh)
+    const admin_hash_user_vote2 = keccak256(keccak256(hh))
+    // console.log('admin_hash_user_vote2', admin_hash_user_vote2)
+    expect(admin_hash_user_vote).to.equal(admin_hash_user_vote2)
+
     user_vote.extraSignature = signMessageByWallet(admin_wallet, admin_hash_user_vote)
 
     console.log('user_vote', user_vote)
@@ -842,7 +864,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
     console.log('verify_result', verify_result)
     expect(verify_result).to.equal(true)
 
-    const arena_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner)
+    const arena_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchListTime, 0, 0, match_data.arenaNFT, match_data.arenaTokenId, match_data.arenaJPG, match_data.arenaJPGOwner)
     expect(arena_hash).to.equal(arena_hash_in_contract)
 
     // const user1_signer = await nft_battle.getSigner(arena_hash, match_data.arenaOwnerSignature)
@@ -856,7 +878,7 @@ const makeMatchData = async (user1_wallet:Wallet, user2_wallet:Wallet, arenaJPG=
     // const rs = await nft_battle.checkSign(arena_hash,user1_nft_owner, match_data.arenaOwnerSignature)
     // console.log('rs', rs)
 
-    const challenge_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner)
+    const challenge_hash_in_contract = await nft_battle.hashMatchData(match_data.matchId, match_data.matchListTime, match_data.matchStartTime, match_data.matchEndTime, match_data.challengeNFT, match_data.challengeTokenId, match_data.challengeJPG, match_data.challengeJPGOwner)
     expect(challenge_hash).to.equal(challenge_hash_in_contract)
 
     return {

@@ -1,5 +1,5 @@
-// ##deployed index: 67
-// ##deployed at: 2023/08/07 09:48:57
+// ##deployed index: 72
+// ##deployed at: 2023/08/08 15:51:55
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -115,8 +115,8 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
     /// @param _nft_address NFT地址
     /// @param _token_id NFT tokenId
     /// @return hash值
-    function hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external override pure returns (bytes32) {
-        return _hashMatchData(_match_id, _match_start_time, _match_end_time, _nft_address, _token_id, _jpg, _jpg_owner);
+    function hashMatchData(bytes32 _match_id, uint256 _match_list_time, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external override pure returns (bytes32) {
+        return _hashMatchData(_match_id, _match_list_time, _match_start_time, _match_end_time, _nft_address, _token_id, _jpg, _jpg_owner);
     }
 
     /// @notice 检查签名
@@ -219,9 +219,9 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         return _recovered_signer == _signer;
     }
 
-    function _hashMatchData(bytes32 _match_id, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
+    function _hashMatchData(bytes32 _match_id, uint256 _match_list_time, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(
-            _match_id,_match_start_time,_match_end_time,_nft_address,_token_id, _jpg, _jpg_owner
+            _match_id,_match_list_time,_match_start_time,_match_end_time,_nft_address,_token_id, _jpg, _jpg_owner
         ))));
     }
 
@@ -230,7 +230,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         bool _challenge_sign = false;
 
         if (_match_data.arenaOwnerSignature.length > 0 ){
-            bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
+            bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchListTime, 0, 0, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
             address _arena_owner = _match_data.arenaJPGOwner != address(0) ? _match_data.arenaJPGOwner : nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
             if (_checkSign(_arena_hash, _arena_owner, _match_data.arenaOwnerSignature)) {
                 _arena_sign = true;
@@ -238,7 +238,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         }
 
         if (_match_data.challengeOwnerSignature.length > 0) {
-            bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
+            bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchListTime, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
             address _challenge_owner = _match_data.challengeJPGOwner != address(0) ? _match_data.challengeJPGOwner : nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
             if (_checkSign(_challenge_hash, _challenge_owner, _match_data.challengeOwnerSignature)) {
                 _challenge_sign = true;
@@ -400,7 +400,10 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     function _checkMatchData(MatchStructs.MatchData calldata _match_data) private view returns (bool) {
         require(_match_data.matchId.length > 0, "NFTBattle: match_id is empty");
-        require(_match_data.matchEndTime >= block.timestamp, "NFTBattle: matchEndTime is less than current time");
+        require(_match_data.matchListTime < block.timestamp, "NFTBattle: matchListTime is less than current time");
+        require(_match_data.matchListTime <= _match_data.matchStartTime, "NFTBattle: matchListTime is greater than matchStartTime");
+        require(_match_data.matchStartTime < _match_data.matchEndTime, "NFTBattle: matchStartTime is greater than matchEndTime");
+        require(_match_data.matchEndTime <= block.timestamp, "NFTBattle: matchEndTime is less than current time");
         require(_match_data.voteCount >= minimum_vote_amount, "NFTBattle: voteCount is less than minimum_vote_amount");
         require(_match_data.voteArenaCount != _match_data.voteChallengeCount, "NFTBattle: voteArenaCount is equal to voteChallengeCount");
         require(_match_data.merkleTreeRoot.length > 0, "NFTBattle: merkleTreeRoot can not be empty");

@@ -82,7 +82,7 @@ export const fetchToNFTData = (data: any): NFTData => {
         tokenId: bnToNoPrecisionNumber(data['tokenId']),
         amount: bnToNoPrecisionNumber(data['amount']),
         stakedAt: bnToNoPrecisionNumber(data['stakedAt']),
-        stakedAtDate: bnToDate(data[3]),
+        stakedAtDate: bnToDate(data['stakedAt']),
         isFrozen: data['isFrozen'],
         beneficiaryAddress: data['beneficiaryAddress']
     }
@@ -90,6 +90,7 @@ export const fetchToNFTData = (data: any): NFTData => {
 
 export interface MatchData {
     matchId: string
+    matchListTime: number
     matchStartTime: number
     matchEndTime: number
     voteCount: number
@@ -114,6 +115,7 @@ export interface MatchData {
 export const fetchToMatchData = (data: any): MatchData => {
     return {
         matchId: data['matchId'],
+        matchListTime: bnToNoPrecisionNumber(data['matchListTime']),
         matchStartTime: bnToNoPrecisionNumber(data['matchStartTime']),
         matchEndTime: bnToNoPrecisionNumber(data['matchEndTime']),
         voteCount: bnToNoPrecisionNumber(data['voteCount']),

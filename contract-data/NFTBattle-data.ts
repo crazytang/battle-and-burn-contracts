@@ -1,14 +1,14 @@
-// deployed_index: 67
-// deployed_at: 2023/08/07 09:48:57
+// deployed_index: 72
+// deployed_at: 2023/08/08 15:51:55
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'NFTBattle',
-    address: '0xF80058B10a4725C4c4e89E7BE9db12bB46b22652',
-    proxy_address: '0xF80058B10a4725C4c4e89E7BE9db12bB46b22652',
-    target_address: '0xC18052530A42536e329b68E9008cac03751FbF2B',
+    address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
+    proxy_address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
+    target_address: '0x95c45985A2dc68C311475D709bD90a0A4b4C4ecf',
     libraries: [],
     abi:  [
     {
@@ -226,6 +226,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "matchId",
               "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
@@ -463,6 +468,11 @@ const NFTBattle_data: ProxyContractData = {
             },
             {
               "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
               "name": "matchStartTime",
               "type": "uint256"
             },
@@ -583,6 +593,11 @@ const NFTBattle_data: ProxyContractData = {
             },
             {
               "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
               "name": "matchStartTime",
               "type": "uint256"
             },
@@ -695,6 +710,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "matchId",
               "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
@@ -872,6 +892,11 @@ const NFTBattle_data: ProxyContractData = {
             },
             {
               "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
               "name": "matchStartTime",
               "type": "uint256"
             },
@@ -1046,6 +1071,11 @@ const NFTBattle_data: ProxyContractData = {
               "internalType": "bytes32",
               "name": "matchId",
               "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "matchListTime",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
@@ -1309,6 +1339,11 @@ const NFTBattle_data: ProxyContractData = {
           "internalType": "bytes32",
           "name": "_match_id",
           "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_match_list_time",
+          "type": "uint256"
         },
         {
           "internalType": "uint256",

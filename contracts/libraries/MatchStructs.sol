@@ -6,6 +6,7 @@ library MatchStructs {
     // 比赛数据
     struct MatchData {
         bytes32 matchId; // 比赛ID
+        uint256 matchListTime; // 比赛上架时间
         uint256 matchStartTime; // 比赛开始时间
         uint256 matchEndTime; // 比赛结束时间
 
