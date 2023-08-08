@@ -1,5 +1,5 @@
-// deployed_index: 72
-// deployed_at: 2023/08/08 15:51:55
+// deployed_index: 73
+// deployed_at: 2023/08/08 16:11:37
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const NFTBattle_data: ProxyContractData = {
     contract_name: 'NFTBattle',
     address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
     proxy_address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
-    target_address: '0x95c45985A2dc68C311475D709bD90a0A4b4C4ecf',
+    target_address: '0xa573F38d07bb625f8342875006A86E5dD0159Ad1',
     libraries: [],
     abi:  [
     {
@@ -1339,21 +1339,6 @@ const NFTBattle_data: ProxyContractData = {
           "internalType": "bytes32",
           "name": "_match_id",
           "type": "bytes32"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_match_list_time",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_match_start_time",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_match_end_time",
-          "type": "uint256"
         },
         {
           "internalType": "address",

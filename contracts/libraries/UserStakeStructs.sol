@@ -25,6 +25,14 @@ library UserStakeStructs {
         uint256 amount;
     }
 
+    struct UserNFTStakedData {
+        address userAddress;
+        address nftAddress;
+        uint256 tokenId;
+        uint256 amount;
+        uint256 lastTradedAt;
+    }
+
     struct ApprovalData {
         address userAddress;
         address spender;

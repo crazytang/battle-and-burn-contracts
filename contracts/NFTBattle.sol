@@ -1,5 +1,5 @@
-// ##deployed index: 72
-// ##deployed at: 2023/08/08 15:51:55
+// ##deployed index: 73
+// ##deployed at: 2023/08/08 16:11:37
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -110,13 +110,11 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
 
     /// @notice hash比赛数据，用来签名
     /// @param _match_id 比赛ID
-    /// @param _match_start_time 比赛开始时间
-    /// @param _match_end_time 比赛结束时间
     /// @param _nft_address NFT地址
     /// @param _token_id NFT tokenId
     /// @return hash值
-    function hashMatchData(bytes32 _match_id, uint256 _match_list_time, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external override pure returns (bytes32) {
-        return _hashMatchData(_match_id, _match_list_time, _match_start_time, _match_end_time, _nft_address, _token_id, _jpg, _jpg_owner);
+    function hashMatchData(bytes32 _match_id, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external override pure returns (bytes32) {
+        return _hashMatchData(_match_id, _nft_address, _token_id, _jpg, _jpg_owner);
     }
 
     /// @notice 检查签名
@@ -219,9 +217,9 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         return _recovered_signer == _signer;
     }
 
-    function _hashMatchData(bytes32 _match_id, uint256 _match_list_time, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
+    function _hashMatchData(bytes32 _match_id, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) private pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(
-            _match_id,_match_list_time,_match_start_time,_match_end_time,_nft_address,_token_id, _jpg, _jpg_owner
+            _match_id,_nft_address,_token_id, _jpg, _jpg_owner
         ))));
     }
 
@@ -230,7 +228,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         bool _challenge_sign = false;
 
         if (_match_data.arenaOwnerSignature.length > 0 ){
-            bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.matchListTime, 0, 0, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
+            bytes32 _arena_hash = _hashMatchData(_match_data.matchId, _match_data.arenaNFT, _match_data.arenaTokenId, _match_data.arenaJPG, _match_data.arenaJPGOwner);
             address _arena_owner = _match_data.arenaJPGOwner != address(0) ? _match_data.arenaJPGOwner : nft_battle_pool.getNFTOwner(_match_data.arenaNFT, _match_data.arenaTokenId);
             if (_checkSign(_arena_hash, _arena_owner, _match_data.arenaOwnerSignature)) {
                 _arena_sign = true;
@@ -238,7 +236,7 @@ contract NFTBattle is INFTBattle, Initializable, OwnableUpgradeable, PausableUpg
         }
 
         if (_match_data.challengeOwnerSignature.length > 0) {
-            bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.matchListTime, _match_data.matchStartTime, _match_data.matchEndTime, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
+            bytes32 _challenge_hash = _hashMatchData(_match_data.matchId, _match_data.challengeNFT, _match_data.challengeTokenId, _match_data.challengeJPG, _match_data.challengeJPGOwner);
             address _challenge_owner = _match_data.challengeJPGOwner != address(0) ? _match_data.challengeJPGOwner : nft_battle_pool.getNFTOwner(_match_data.challengeNFT, _match_data.challengeTokenId);
             if (_checkSign(_challenge_hash, _challenge_owner, _match_data.challengeOwnerSignature)) {
                 _challenge_sign = true;

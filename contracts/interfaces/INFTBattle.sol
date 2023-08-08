@@ -26,7 +26,7 @@ interface INFTBattle {
     function determineIncludeJPG(MatchStructs.MatchData calldata _match_data, DistributionStructs.CreationNFTParams calldata _creation_nft_params, bool _nft_redeem) external;
     function determineIncludeJPGBySys(MatchStructs.MatchData calldata _match_data, DistributionStructs.CreationNFTParams calldata _creation_nft_params) external;
 
-    function hashMatchData(bytes32 _match_id, uint256 _match_list_time, uint256 _match_start_time, uint256 _match_end_time, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external pure returns (bytes32);
+    function hashMatchData(bytes32 _match_id, address _nft_address, uint256 _token_id, string calldata _jpg, address _jpg_owner) external pure returns (bytes32);
     function checkSign(bytes32 _hash, address _signer, bytes calldata _signature) external pure returns (bool);
     function checkArenaAndChallengeSignatures(MatchStructs.MatchData calldata _match_data) external view returns (bool, bool);
     function getUserNonce(address _user) external view returns (uint256);
