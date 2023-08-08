@@ -1,14 +1,14 @@
-// deployed_index: 35
-// deployed_at: 2023/08/08 09:55:08
+// deployed_index: 36
+// deployed_at: 2023/08/08 17:50:39
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const YsghPool_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
     contract_name: 'YsghPool',
-    address: '0x1C2a513ebaa1220C7De53734BD53F5edD4fbEC4d',
-    proxy_address: '0x1C2a513ebaa1220C7De53734BD53F5edD4fbEC4d',
-    target_address: '0xDD9584B942Fc1501CAc728C85BA2DcF1EFf1aA1a',
+    address: '0xD5c46DE212af1836543b1e1B8ebeFc4a71f29500',
+    proxy_address: '0xD5c46DE212af1836543b1e1B8ebeFc4a71f29500',
+    target_address: '0x9731AfB8b5a22283A0Be8132311AE633A185096e',
     libraries: [],
     abi:  [
     {

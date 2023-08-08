@@ -1,14 +1,14 @@
-// deployed_index: 13
-// deployed_at: 2023/08/07 17:12:50
+// deployed_index: 17
+// deployed_at: 2023/08/08 17:13:39
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBidPool_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'AggressiveBidPool',
-    address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
-    proxy_address: '0x3d153548F8E6609C0Ea5a9199eec893F020513B7',
-    target_address: '0xC3d5847E45D512888E2d3c4a8399491fD26f3800',
+    address: '0x63990FC66F5588894C6df92b98F7795644B84024',
+    proxy_address: '0x63990FC66F5588894C6df92b98F7795644B84024',
+    target_address: '0x179789b07Ba2dc111c03C0FdD903e0244743b19e',
     libraries: [],
     abi:  [
     {
@@ -104,6 +104,32 @@ const AggressiveBidPool_data: ProxyContractData = {
         }
       ],
       "name": "RedeemedNFT",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "aggressive_bid_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetAggressiveBid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "nft_battle_pool_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetNFTBattlePool",
       "type": "event"
     },
     {
@@ -288,13 +314,6 @@ const AggressiveBidPool_data: ProxyContractData = {
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "deposit",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
@@ -322,30 +341,21 @@ const AggressiveBidPool_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_user",
+          "name": "_user_address",
           "type": "address"
-        }
-      ],
-      "name": "getUserBalance",
-      "outputs": [
+        },
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
         {
           "internalType": "uint256",
-          "name": "",
+          "name": "_tokenId",
           "type": "uint256"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_user",
-          "type": "address"
-        }
-      ],
-      "name": "getUserStakedData",
+      "name": "getUserNFTStakedData",
       "outputs": [
         {
           "components": [
@@ -355,36 +365,75 @@ const AggressiveBidPool_data: ProxyContractData = {
               "type": "address"
             },
             {
-              "components": [
-                {
-                  "internalType": "address",
-                  "name": "nftAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "tokenId",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "amount",
-                  "type": "uint256"
-                }
-              ],
-              "internalType": "struct UserStakeStructs.NFTStakedData[]",
-              "name": "nftStakedDataList",
-              "type": "tuple[]"
+              "internalType": "address",
+              "name": "nftAddress",
+              "type": "address"
             },
             {
               "internalType": "uint256",
-              "name": "balance",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastTradedAt",
               "type": "uint256"
             }
           ],
-          "internalType": "struct UserStakeStructs.BidPoolUserStakedData",
+          "internalType": "struct UserStakeStructs.UserNFTStakedData",
           "name": "",
           "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_user_address",
+          "type": "address"
+        }
+      ],
+      "name": "getUserNFTStakedDataList",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "userAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "nftAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastTradedAt",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct UserStakeStructs.UserNFTStakedData[]",
+          "name": "",
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
@@ -591,39 +640,6 @@ const AggressiveBidPool_data: ProxyContractData = {
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "_amount",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_royalty_receiver",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_royalty_amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferETHFrom",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        },
-        {
           "internalType": "address",
           "name": "_nft_address",
           "type": "address"
@@ -663,23 +679,6 @@ const AggressiveBidPool_data: ProxyContractData = {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "withdraw",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "stateMutability": "payable",
-      "type": "receive"
     }
   ],
   

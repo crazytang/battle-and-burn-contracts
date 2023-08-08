@@ -4,6 +4,7 @@ import {bnToNumber, getTransactionOptions, setDefaultGasOptions} from "../../hel
 import {ethers} from "hardhat";
 import {deploy_proxy_contract} from "../../helpers/contract/deploy-proxy-contract-to-files";
 import NFTBattle_data from "../../contract-data/NFTBattle-data";
+import AggressiveBid_data from "../../contract-data/AggressiveBid-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
@@ -20,6 +21,13 @@ async function main() {
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
+    const aggressive_bid = await ethers.getContractAt('AggressiveBid', AggressiveBid_data.address, admin_wallet)
+    const aggressive_bid_distribution_address_in_bid = await aggressive_bid.aggressive_bid_distribution()
+    if (aggressive_bid_distribution_address_in_bid !== new_contract_proxy_contract.address) {
+        const tx = await aggressive_bid.setAggressiveBidDistribution(new_contract_proxy_contract.address, getTransactionOptions())
+        console.log('setAggressiveBidDistribution() tx:', tx.hash)
+        await tx.wait()
+    }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

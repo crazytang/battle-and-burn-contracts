@@ -1,5 +1,5 @@
-// ##deployed index: 9
-// ##deployed at: 2023/08/06 18:19:10
+// ##deployed index: 15
+// ##deployed at: 2023/08/08 18:50:16
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -17,6 +17,7 @@ import "./interfaces/IAggressiveBidDistribution.sol";
 import "./interfaces/IAggressiveBidPool.sol";
 import "./libraries/AggressiveBidStructs.sol";
 import "./libraries/UserStakeStructs.sol";
+import "./interfaces/IYsghPool.sol";
 
 contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
@@ -25,13 +26,14 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
 
     IAggressiveBidDistribution public override aggressive_bid_distribution;
     IAggressiveBidPool public override aggressive_bid_pool;
+    IYsghPool public override ysgh_pool;
     address public verifier_address;
 
     mapping(address => uint256) public override nonces;
     mapping(bytes32 => bool) public override cancelled_or_filled;
 
     /// @notice This method is called by the proxy contract to initialize the contract.
-    function initialize(address _aggressive_bid_distbn_address, address _aggressive_bid_pool) public initializer {
+    function initialize(address _aggressive_bid_distbn_address, address _ysgh_pool_address, address _aggressive_bid_pool) public initializer {
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
@@ -41,6 +43,9 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
 
         require(_aggressive_bid_pool.isContract(), "AggressiveBid: _aggressive_bid_pool is not a contract address");
         aggressive_bid_pool = IAggressiveBidPool(_aggressive_bid_pool);
+
+            require(_ysgh_pool_address.isContract(), "AggressiveBid: _ysgh_pool_address is not a contract address");
+            ysgh_pool = IYsghPool(_ysgh_pool_address);
     }
 
     function pause() external onlyOwner {
@@ -63,6 +68,13 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         aggressive_bid_pool = IAggressiveBidPool(_aggressive_bid_pool);
 
         emit SetAggressiveBidPool(_aggressive_bid_pool);
+    }
+
+    function setYsghPool(address _ysgh_pool_address) external override onlyOwner {
+        require(_ysgh_pool_address.isContract(), "AggressiveBid: _ysgh_pool_address is not a contract address");
+        ysgh_pool = IYsghPool(_ysgh_pool_address);
+
+        emit SetYsghPool(_ysgh_pool_address);
     }
 
     function setVerifierAddress(address _verifier_address) external override onlyOwner {
@@ -126,16 +138,19 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
 
         uint256 _fee = _buy_order.price * _transfer_fee_numberator / _fee_denominator;
 
-//        uint256 _to_seller_amount = _buy_order.price - _fee;
+        uint256 _to_seller_amount = _buy_order.price - _fee;
 
         if (_buy_order.paymentToken == address(0)) {
-            UserStakeStructs.BidPoolUserStakedData memory _user_staked_data = aggressive_bid_pool.getUserStakedData(_buy_order.trader);
+            uint256 _user_balance_in_pool = ysgh_pool.getUserBalance(_buy_order.trader);
+            require(_user_balance_in_pool >= _buy_order.price,
+                "AggressiveBid: user's YSGH balance in pool must be greater or equal than price");
 
-            require(_user_staked_data.balance >= _buy_order.price,
-                "AggressiveBid: user's ETH balance must be greater or equal than price");
+            ysgh_pool.transferFrom(_buy_order.trader, _sell_order.trader, _to_seller_amount);
 
-            aggressive_bid_pool.transferETHFrom(_buy_order.trader, _sell_order.trader, _buy_order.price,
-                address(aggressive_bid_distribution), _fee);
+            // 提取分润到分润合约
+            ysgh_pool.transferFrom(_buy_order.trader, address(this) , _fee);
+            ysgh_pool.withdrawTo(address(aggressive_bid_distribution), _fee);
+
         } else {
             revert("AggressiveBid: paymentToken is not supported");
         }

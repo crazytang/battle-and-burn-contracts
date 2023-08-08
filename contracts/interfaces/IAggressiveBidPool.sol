@@ -6,6 +6,8 @@ import "./IAggressiveBid.sol";
 import "./INFTBattlePool.sol";
 
 interface IAggressiveBidPool {
+    event SetNFTBattlePool(address nft_battle_pool_address);
+    event SetAggressiveBid(address aggressive_bid_address);
     event TransferedETHFrom(address indexed from, address indexed to, uint256 amount, address royalty_receiver, uint256 royalty_amount);
     event TransferedNFTFrom(address indexed from, address to, address nft_address, uint256 tokenId, uint256 amount);
     event Withdrawed(address indexed sender, uint256 amount);
@@ -22,12 +24,10 @@ interface IAggressiveBidPool {
     function stakeNFT(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external;
     function stakeFromNFTBattlePool(address _nft_address, uint256 _tokenId) external;
     function redeemNFT(address _nft_address, uint256 _tokenId) external;
-    function deposit() external payable;
-    function withdraw(uint256 _amount) external;
-    function transferETHFrom(address _from, address _to, uint256 _amount, address _royalty_receiver, uint256 _royalty_amount) external;
     function transferNFTFrom(address _from, address _to, address _nft_address, uint256 _tokenId, uint256 _amount) external;
 
-    function getUserStakedData(address _user) external view returns (UserStakeStructs.BidPoolUserStakedData memory);
+//    function getUserStakedData(address _user) external view returns (UserStakeStructs.BidPoolUserStakedData memory);
     function getNFTOwner(address _nft_address, uint256 _tokenId) external view returns (address);
-    function getUserBalance(address _user) external view returns (uint256);
+    function getUserNFTStakedData(address _user_address, address _nft_address, uint256 _tokenId) external view returns (UserStakeStructs.UserNFTStakedData memory);
+    function getUserNFTStakedDataList(address _user_address) external view returns (UserStakeStructs.UserNFTStakedData[] memory);
 }

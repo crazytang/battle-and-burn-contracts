@@ -166,6 +166,33 @@ export const fetchToBidPoolUserStakedData = (data: any): BidPoolUserStakedData =
     }
 }
 
+export interface UserNFTStakedData {
+    userAddress: string
+    nftAddress: string
+    tokenId: number
+    amount: number
+    lastTradedAt: number
+    lastTradedAtDate: string
+}
+
+export const fetchToUserNFTStakedData = (data: any): UserNFTStakedData => {
+    return {
+        userAddress: data['userAddress'],
+        nftAddress: data['nftAddress'],
+        tokenId: bnToNoPrecisionNumber(data['tokenId']),
+        amount: bnToNoPrecisionNumber(data['amount']),
+        lastTradedAt: bnToNoPrecisionNumber(data['lastTradedAt']),
+        lastTradedAtDate: bnToDate(data['lastTradedAt'])
+    }
+}
+
+export const fetchToUserNFTStakedDataList = (data: any): UserNFTStakedData[] => {
+    let result = []
+    for (let i = 0; i < data.length; i++) {
+        result.push(fetchToUserNFTStakedData(data[i]))
+    }
+    return result
+}
 
 export enum OrderSide {
     BUY, SELL

@@ -8,6 +8,7 @@ import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
 import AggressiveBid_data from "../../contract-data/AggressiveBid-data";
 import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
 import AggressiveBidDistribution_data from "../../contract-data/AggressiveBidDistribution-data";
+import YsghPool_data from "../../contract-data/YsghPool-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
@@ -18,8 +19,8 @@ async function main() {
 
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
-    const initialize_function = 'initialize(address,address)'
-    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [AggressiveBidDistribution_data.address, AggressiveBidPool_data.address])
+    const initialize_function = 'initialize(address,address,address)'
+    const [new_contract, new_contract_proxy_contract] = await deploy_proxy_contract(contract_name, admin_wallet, initialize_function, [AggressiveBidDistribution_data.address, YsghPool_data.address, AggressiveBidPool_data.address])
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
@@ -35,6 +36,20 @@ async function main() {
     if (aggressive_bid_address_in_pool !== new_contract_proxy_contract.address) {
         const tx = await aggressive_bid_pool.setAggressiveBid(new_contract_proxy_contract.address, getTransactionOptions())
         console.log('setAggressiveBid() tx:', tx.hash)
+        await tx.wait()
+    }
+
+    const ysgh_pool_address = await new_contract_proxy_contract.ysgh_pool()
+    if (ysgh_pool_address !== YsghPool_data.address) {
+        const tx = await new_contract_proxy_contract.setYsghPool(YsghPool_data.address, getTransactionOptions())
+        console.log('setYsghPool() tx:', tx.hash)
+        await tx.wait()
+    }
+
+    const aggressive_bid_distribution_address = await new_contract_proxy_contract.aggressive_bid_distribution()
+    if (aggressive_bid_distribution_address !== AggressiveBidDistribution_data.address) {
+        const tx = await new_contract_proxy_contract.setAggressiveBidDistribution(AggressiveBidDistribution_data.address, getTransactionOptions())
+        console.log('setAggressiveBidDistribution() tx:', tx.hash)
         await tx.wait()
     }
 }

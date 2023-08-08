@@ -32,7 +32,11 @@ import {nowTimestamp} from "../../helpers/utils";
 import {solidityKeccak256} from "ethers/lib/utils";
 import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
-import {BidPoolUserStakedData, fetchToBidPoolUserStakedData} from "../../helpers/contract/structs";
+import {
+    BidPoolUserStakedData,
+    fetchToBidPoolUserStakedData, fetchToUserNFTStakedData,
+    fetchToUserNFTStakedDataList, UserNFTStakedData
+} from "../../helpers/contract/structs";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import {DistributionStructs} from "../../typechain-types/CreationNFT";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
@@ -112,8 +116,8 @@ describe("Creation NFT testing", function () {
             v: v
         }
 
-        const user1_staked_data_before:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_before', user1_staked_data_before)
+        const user1_staked_data_list_before:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
+        console.log('user1_staked_data_list_before', user1_staked_data_list_before)
 
         const user1_aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, user1_wallet)
         // 质押NFT
@@ -125,12 +129,12 @@ describe("Creation NFT testing", function () {
         console.log('user1_nft_new_owner', user1_nft_new_owner)
         expect(user1_nft_new_owner).equal(aggressive_bid_pool.address)
 
-        const user1_staked_data_after:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_after', user1_staked_data_after)
-        expect(user1_staked_data_after.nftStakedDataList.length).equal(user1_staked_data_before.nftStakedDataList.length + 1)
-        expect(user1_staked_data_after.nftStakedDataList[user1_staked_data_after.nftStakedDataList.length-1].nftAddress).equal(user1_nft.address)
-        expect(user1_staked_data_after.nftStakedDataList[user1_staked_data_after.nftStakedDataList.length-1].tokenId).equal(user1_nft_token_id)
-        expect(user1_staked_data_after.nftStakedDataList[user1_staked_data_after.nftStakedDataList.length-1].amount).equal(1)
+        const user1_staked_data_list_after:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
+        console.log('user1_staked_data_list_after', user1_staked_data_list_after)
+        expect(user1_staked_data_list_after.length).equal(user1_staked_data_list_before.length + 1)
+        expect(user1_staked_data_list_after[user1_staked_data_list_after.length-1].nftAddress).equal(user1_nft.address)
+        expect(user1_staked_data_list_after[user1_staked_data_list_after.length-1].tokenId).equal(user1_nft_token_id)
+        expect(user1_staked_data_list_after[user1_staked_data_list_after.length-1].amount).equal(1)
 
         // 赎回NFT
         tx = await user1_aggressive_bid_pool.redeemNFT(user1_nft.address, user1_nft_token_id, getTransactionOptions())
@@ -141,64 +145,8 @@ describe("Creation NFT testing", function () {
         console.log('user1_nft_new_owner2', user1_nft_new_owner2)
         expect(user1_nft_new_owner2).equal(user1_nft_owner)
 
-        const user1_staked_data_after2:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_after2', user1_staked_data_after2)
-        expect(user1_staked_data_after2.nftStakedDataList.length).equal(user1_staked_data_after.nftStakedDataList.length -1)
-    })
-
-    it('test deposit() and withdraw()', async () => {
-        const user1_deposit_amount = 0.01
-        console.log('user1_deposit_amount', user1_deposit_amount)
-
-        const user1_eth_balance_before = bnToNumber(await user1_wallet.getBalance())
-        console.log('user1_eth_balance_before', user1_eth_balance_before.toString())
-
-        const aggressive_bid_pool_eth_balance_before = bnToNumber(await provider.getBalance(aggressive_bid_pool.address))
-        console.log('aggressive_bid_pool_eth_balance_before', aggressive_bid_pool_eth_balance_before.toString())
-
-        const user1_staked_data_before:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_before', user1_staked_data_before)
-
-        const user1_aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, user1_wallet)
-
-        // 存入ETH
-        const tx_data = {...getTransactionOptions(), value: numberToBn(user1_deposit_amount)}
-        tx = await user1_aggressive_bid_pool.deposit(tx_data)
-        console.log('user1_aggressive_bid_pool.deposit() tx.hash', tx.hash)
-        receipt = await tx.wait()
-
-        const gas_fee = getGasUsedFromReceipt(receipt)
-        console.log('gas_fee', gas_fee.toString())
-
-        const user1_eth_balance_after = bnToNumber(await user1_wallet.getBalance())
-        console.log('user1_eth_balance_after', user1_eth_balance_after)
-        expect(amount_equal_in_precision(user1_eth_balance_after, user1_eth_balance_before - user1_deposit_amount - gas_fee)).equal(true)
-
-        const aggressive_bid_pool_eth_balance_after = bnToNumber(await provider.getBalance(aggressive_bid_pool.address))
-        console.log('aggressive_bid_pool_eth_balance_after', aggressive_bid_pool_eth_balance_after)
-        expect(amount_equal_in_precision(aggressive_bid_pool_eth_balance_after, aggressive_bid_pool_eth_balance_before + user1_deposit_amount)).equal(true)
-
-        const user1_staked_data_after:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_after', user1_staked_data_after)
-        expect(user1_staked_data_after.balance).equal(user1_staked_data_before.balance + user1_deposit_amount)
-
-        // 取出ETH
-        tx = await user1_aggressive_bid_pool.withdraw(numberToBn(user1_deposit_amount), getTransactionOptions())
-        console.log('user1_aggressive_bid_pool.withdraw() tx.hash', tx.hash)
-        receipt = await tx.wait()
-
-        const gas_fee2 = getGasUsedFromReceipt(receipt)
-
-        const user1_eth_balance_after2 = bnToNumber(await user1_wallet.getBalance())
-        console.log('user1_eth_balance_after2', user1_eth_balance_after2)
-        expect(amount_equal_in_precision(user1_eth_balance_after2, user1_eth_balance_after - gas_fee2 + user1_deposit_amount)).equal(true)
-
-        const aggressive_bid_pool_eth_balance_after2 = bnToNumber(await provider.getBalance(aggressive_bid_pool.address))
-        console.log('aggressive_bid_pool_eth_balance_after2', aggressive_bid_pool_eth_balance_after2)
-        expect(amount_equal_in_precision(aggressive_bid_pool_eth_balance_after2, aggressive_bid_pool_eth_balance_after - user1_deposit_amount)).equal(true)
-
-        const user1_staked_data_after2:BidPoolUserStakedData = fetchToBidPoolUserStakedData(await aggressive_bid_pool.getUserStakedData(user1_wallet.address))
-        console.log('user1_staked_data_after2', user1_staked_data_after2)
-        expect(user1_staked_data_after2.balance).equal(user1_staked_data_after.balance - user1_deposit_amount)
+        const user1_staked_data_list_after2:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
+        console.log('user1_staked_data_list_after2', user1_staked_data_list_after2)
+        expect(user1_staked_data_list_after2.length).equal(user1_staked_data_list_after.length -1)
     })
 })

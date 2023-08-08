@@ -1,16 +1,97 @@
-// deployed_index: 2
-// deployed_at: 2023/08/04 20:37:38
+// deployed_index: 6
+// deployed_at: 2023/08/08 19:02:14
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBidDistribution_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'AggressiveBidDistribution',
-    address: '0xAb3CC210B32be9c6E4AfCF43007aaA12602B306c',
-    proxy_address: '0xAb3CC210B32be9c6E4AfCF43007aaA12602B306c',
-    target_address: '0x0e8EcABDaE79d3a50154733eCb81853026526a32',
+    address: '0x7082Feefe85Fe84f68076Ee352C21573E63c5e73',
+    proxy_address: '0x7082Feefe85Fe84f68076Ee352C21573E63c5e73',
+    target_address: '0x002046A12120a8e4832faDeA522a39f4E99081b3',
     libraries: [],
     abi:  [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "date",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "AddedToDailyReward",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "claimed_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Claimed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "date",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "total_amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "users",
+          "type": "address[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256[]",
+          "name": "amounts",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "DistributedDaily",
+      "type": "event"
+    },
     {
       "anonymous": false,
       "inputs": [
@@ -54,6 +135,19 @@ const AggressiveBidDistribution_data: ProxyContractData = {
         }
       ],
       "name": "Paused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint96",
+          "name": "bid_royalty_rate",
+          "type": "uint96"
+        }
+      ],
+      "name": "SetBidRoyaltyRate",
       "type": "event"
     },
     {

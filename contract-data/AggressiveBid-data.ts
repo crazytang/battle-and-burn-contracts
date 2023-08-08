@@ -1,14 +1,14 @@
-// deployed_index: 9
-// deployed_at: 2023/08/06 18:19:10
+// deployed_index: 15
+// deployed_at: 2023/08/08 18:50:16
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBid_data: ProxyContractData = {
     env: 'test',
     network: 'goerli',
     contract_name: 'AggressiveBid',
-    address: '0x76EE3E928664694809e64A1fA5C31a61650a4F5C',
-    proxy_address: '0x76EE3E928664694809e64A1fA5C31a61650a4F5C',
-    target_address: '0x20B0E1CD2934965b34A4Bf87F0433ceFD69D9885',
+    address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
+    proxy_address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
+    target_address: '0xb8740699676058d740745e324112b296F768A1d8',
     libraries: [],
     abi:  [
     {
@@ -363,6 +363,19 @@ const AggressiveBid_data: ProxyContractData = {
         }
       ],
       "name": "SetVerifierAddress",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "ysgh_pool_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetYsghPool",
       "type": "event"
     },
     {
@@ -903,6 +916,11 @@ const AggressiveBid_data: ProxyContractData = {
         },
         {
           "internalType": "address",
+          "name": "_ysgh_pool_address",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
           "name": "_aggressive_bid_pool",
           "type": "address"
         }
@@ -1014,6 +1032,19 @@ const AggressiveBid_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
+          "name": "_ysgh_pool_address",
+          "type": "address"
+        }
+      ],
+      "name": "setYsghPool",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "newOwner",
           "type": "address"
         }
@@ -1036,6 +1067,19 @@ const AggressiveBid_data: ProxyContractData = {
       "outputs": [
         {
           "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "ysgh_pool",
+      "outputs": [
+        {
+          "internalType": "contract IYsghPool",
           "name": "",
           "type": "address"
         }
