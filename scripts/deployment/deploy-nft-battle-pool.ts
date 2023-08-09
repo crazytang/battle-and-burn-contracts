@@ -4,6 +4,7 @@ import {bnToNumber, getTransactionOptions, setDefaultGasOptions} from "../../hel
 import {ethers} from "hardhat";
 import {deploy_proxy_contract} from "../../helpers/contract/deploy-proxy-contract-to-files";
 import NFTBattle_data from "../../contract-data/NFTBattle-data";
+import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
@@ -28,6 +29,13 @@ async function main() {
     if (nft_battle_pool !== new_contract_proxy_contract.address) {
         const tx = await nft_battle.setNFTBattlePool(new_contract_proxy_contract.address, getTransactionOptions())
         console.log('nft_battle.setNFTBattlePool() tx', tx.hash)
+        await tx.wait()
+    }
+
+    const aggressive_bid_pool_address = await new_contract_proxy_contract.aggressive_bid_pool_address()
+    if (aggressive_bid_pool_address !== AggressiveBidPool_data.address) {
+        const tx = await new_contract_proxy_contract.setAggressiveBidPool(AggressiveBidPool_data.address, getTransactionOptions())
+        console.log('new_contract_proxy_contract.setAggressiveBidPool() tx', tx.hash)
         await tx.wait()
     }
 }

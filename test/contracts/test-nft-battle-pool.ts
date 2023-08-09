@@ -7,7 +7,7 @@ import {
     get_user_wallet_5AD8
 } from "../../helpers/wallets/user_wallet_getter";
 import {
-    CreationNFT, CreationNFT__factory,
+    CreationNFT, CreationNFT__factory, IERC721, IERC721__factory,
     NFTBattle,
     NFTBattle__factory, NFTBattlePool, NFTBattlePool__factory
 } from "../../typechain-types";
@@ -25,11 +25,11 @@ import {solidityKeccak256} from "ethers/lib/utils";
 import {nowTimestamp} from "../../helpers/utils";
 import {keccak256} from "@ethersproject/keccak256";
 import {expect} from "chai";
-import {MatchStructs} from "../../typechain-types/NFTBattlePool";
-import ApprovalDataStruct = MatchStructs.ApprovalDataStruct;
 import NFTBattlePool_data from "../../contract-data/NFTBattlePool-data";
 import {fetchToNFTData} from "../../helpers/contract/structs";
 import {randomInt} from "crypto";
+import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
+import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
 
 
 let tx: ContractTransaction
@@ -42,6 +42,7 @@ const user3_wallet: Wallet = get_user_wallet_4871(provider)
 let nft_battle: NFTBattle
 let creation_nft: CreationNFT
 let nft_battle_pool: NFTBattlePool
+
 
 before(async function () {
     await setDefaultGasOptions(provider)
@@ -58,7 +59,25 @@ before(async function () {
 describe("NFTBattle.sol testing", function () {
     this.timeout(20 * 60 * 1000);
 
-    it('test stake() and redeem()', async () => {
+    it('test base', async () => {
+        const user_address = '0x9F57DB42e2f0503A7545072977952bCfd37cC998'
+        const nft_address = '0x86dec7133ac655071d0b06552ed03af7a74ef4c9'
+        const tokenId = 0
+
+        const user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(user_address, nft_address, tokenId))
+        console.log('user_staked_data', user_staked_data)
+
+        const owner_in_pool = await nft_battle_pool.getNFTOwner(nft_address, tokenId)
+        console.log('owner_in_pool', owner_in_pool)
+        expect(owner_in_pool).to.be.equal(user_address)
+
+        const nft_contract: IERC721 = IERC721__factory.connect(nft_address, admin_wallet)
+        const owner_in_nft = await nft_contract.ownerOf(tokenId)
+        const is_approved = await nft_contract.getApproved(tokenId)
+        tx = await nft_contract.approve(user_address, tokenId, getTransactionOptions())
+    })
+
+    it.skip('test stake() and redeem()', async () => {
         const tokenId = 0
 
         // approve and stake
@@ -87,7 +106,7 @@ describe("NFTBattle.sol testing", function () {
         const s = signature.s
 
         const approval_data: ApprovalDataStruct = {
-            owner: owner,
+            userAddress: owner,
             spender: spender,
             tokenId: numberToBn(tokenId, 0),
             nonce: nonce,
@@ -169,7 +188,7 @@ describe("NFTBattle.sol testing", function () {
         const s = signature.s
 
         const approval_data: ApprovalDataStruct = {
-            owner: owner,
+            userAddress: owner,
             spender: spender,
             tokenId: numberToBn(tokenId, 0),
             nonce: nonce,

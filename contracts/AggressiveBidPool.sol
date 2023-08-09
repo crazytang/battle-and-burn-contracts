@@ -1,5 +1,5 @@
-// ##deployed index: 17
-// ##deployed at: 2023/08/08 17:13:39
+// ##deployed index: 19
+// ##deployed at: 2023/08/10 01:02:58
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
@@ -96,10 +96,9 @@ contract AggressiveBidPool is IAggressiveBidPool, Initializable, OwnableUpgradea
         require(_nft_address != address(0), "AggressiveBidPool: NFT address is zero");
 
         address _owner = nft_battle_pool.getNFTOwner(_nft_address, _tokenId);
-        require(_owner != msg.sender, "AggressiveBidPool: NFT owner is not the owner of the token");
+        require(_owner == msg.sender, "AggressiveBidPool: NFT owner is not the owner of the token");
 
-
-        nft_battle_pool.redeemToAggressiveBidPool(_nft_address, _tokenId);
+        nft_battle_pool.redeemToAggressiveBidPool(msg.sender, _nft_address, _tokenId);
 
         IERC721 _nft = IERC721(_nft_address);
         require(_nft.ownerOf(_tokenId) == address(this), "AggressiveBidPool: AggressiveBid is not the owner of the token");

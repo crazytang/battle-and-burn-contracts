@@ -10,7 +10,7 @@ import {
     AggressiveBidDistribution,
     AggressiveBidDistribution__factory,
     AggressiveBidPool,
-    AggressiveBidPool__factory, CreationNFT, CreationNFT__factory
+    AggressiveBidPool__factory, CreationNFT, CreationNFT__factory, NFTBattlePool, NFTBattlePool__factory
 } from "../../typechain-types";
 import {
     amount_equal_in_precision, bnToNumber,
@@ -55,7 +55,6 @@ const user6_wallet: Wallet = get_user_wallet_d05a(provider)
 
 let aggressive_bid_pool: AggressiveBidPool
 let creation_nft: CreationNFT
-
 before(async function () {
     await setDefaultGasOptions(provider)
     aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, admin_wallet)
@@ -148,5 +147,66 @@ describe("Creation NFT testing", function () {
         const user1_staked_data_list_after2:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
         console.log('user1_staked_data_list_after2', user1_staked_data_list_after2)
         expect(user1_staked_data_list_after2.length).equal(user1_staked_data_list_after.length -1)
+    })
+
+    it('test stakeFromNFTBattlePool()', async () => {
+        const spender = aggressive_bid_pool.address
+        const user1_nft_token_id = 0
+        const deadline = nowTimestamp() + 60*3
+        const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
+
+        const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
+            original_element_creator: ethers.constants.AddressZero,
+            element_creators: [],
+            element_quote_element_creators: []
+        });
+        console.log('user1_nft.address', user1_nft.address)
+
+        const user1_nft_battle_pool = NFTBattlePool__factory.connect(NFTBattlePool_data.address, user1_wallet)
+
+        tx = await user1_nft.approve(user1_nft_battle_pool.address, user1_nft_token_id, getTransactionOptions())
+        console.log('user1_nft.approve() tx.hash', tx.hash)
+        receipt = await tx.wait()
+
+        // 质押NFTbattle pool
+        tx = await user1_nft_battle_pool.stakeFrom(user1_wallet.address, user1_nft.address, user1_nft_token_id, getTransactionOptions())
+        console.log('user1_nft_battle_pool.stakeFrom() tx.hash', tx.hash)
+        receipt = await tx.wait()
+
+        const user1_nft_new_owner = await user1_nft.ownerOf(user1_nft_token_id)
+        console.log('user1_nft_new_owner', user1_nft_new_owner)
+        expect(user1_nft_new_owner).equal(user1_nft_battle_pool.address)
+
+        const user1_nft_owner_in_battle_pool = await user1_nft_battle_pool.getNFTOwner(user1_nft.address, user1_nft_token_id)
+        console.log('user1_nft_owner_in_battle_pool', user1_nft_owner_in_battle_pool)
+        expect(user1_nft_owner_in_battle_pool).equal(user1_wallet.address)
+
+        const user1_staked_data_list_before:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
+        console.log('user1_staked_data_list_before', user1_staked_data_list_before)
+
+        // 从battle pool质押NFT
+        const user1_aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, user1_wallet)
+        const nft_battle_pool = await user1_aggressive_bid_pool.nft_battle_pool()
+        console.log('nft_battle_pool', nft_battle_pool)
+        expect(nft_battle_pool).equal(user1_nft_battle_pool.address)
+
+        tx = await user1_aggressive_bid_pool.stakeFromNFTBattlePool(user1_nft.address, user1_nft_token_id, getTransactionOptions())
+        console.log('user1_aggressive_bid_pool.stakeFromNFTBattlePool() tx.hash', tx.hash)
+        receipt = await tx.wait()
+
+        const user1_nft_new_owner2 = await user1_nft.ownerOf(user1_nft_token_id)
+        console.log('user1_nft_new_owner2', user1_nft_new_owner2)
+        expect(user1_nft_new_owner2).equal(user1_aggressive_bid_pool.address)
+
+        const user1_nft_owner_in_aggressive_bid_pool = await user1_aggressive_bid_pool.getNFTOwner(user1_nft.address, user1_nft_token_id)
+        console.log('user1_nft_owner_in_aggressive_bid_pool', user1_nft_owner_in_aggressive_bid_pool)
+        expect(user1_nft_owner_in_aggressive_bid_pool).equal(user1_wallet.address)
+
+        const user1_staked_data_list_after:UserNFTStakedData[] = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
+        console.log('user1_staked_data_list_after', user1_staked_data_list_after)
+        expect(user1_staked_data_list_after.length).equal(user1_staked_data_list_before.length + 1)
+        expect(user1_staked_data_list_after[user1_staked_data_list_after.length-1].nftAddress).equal(user1_nft.address)
+        expect(user1_staked_data_list_after[user1_staked_data_list_after.length-1].tokenId).equal(user1_nft_token_id)
+
     })
 })

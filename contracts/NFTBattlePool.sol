@@ -1,5 +1,5 @@
-// ##deployed index: 20
-// ##deployed at: 2023/08/03 18:12:00
+// ##deployed index: 23
+// ##deployed at: 2023/08/10 01:09:26
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -26,7 +26,7 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
 
     address[] users;
 
-    address public override aggressive_bid_address;
+    address public override aggressive_bid_pool_address;
 
 
     modifier onlyNFTBattle() {
@@ -34,8 +34,8 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         _;
     }
 
-    modifier onlyAggressiveBid() {
-        require(msg.sender == aggressive_bid_address, "NFTBattle: Only AggressiveBid can call this function");
+    modifier onlyAggressiveBidPool() {
+        require(msg.sender == aggressive_bid_pool_address, "NFTBattle: Only AggressiveBid can call this function");
         _;
     }
 
@@ -66,11 +66,11 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         emit SetNFTBattle(_nft_battle_address);
     }
 
-    function setAggressiveBid(address _aggressive_bid_address) external override onlyOwner {
-        require(Address.isContract(_aggressive_bid_address), "NFTBattle: aggressive_bid_address is not a contract");
-        aggressive_bid_address = _aggressive_bid_address;
+    function setAggressiveBidPool(address _aggressive_bid_pool_address) external override onlyOwner {
+        require(Address.isContract(_aggressive_bid_pool_address), "NFTBattle: aggressive_bid_pool_address is not a contract");
+        aggressive_bid_pool_address = _aggressive_bid_pool_address;
 
-        emit SetAggressiveBid(_aggressive_bid_address);
+        emit SetAggressiveBidPool(_aggressive_bid_pool_address);
     }
 
     /// @notice 质押NFT
@@ -120,8 +120,8 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         _redeem(_owner_address, _nft_address, _tokenId);
     }
 
-    function redeemToAggressiveBidPool(address _nft_address, uint256 _tokenId) external override whenNotPaused onlyAggressiveBid {
-        _redeem(msg.sender, _nft_address, _tokenId);
+    function redeemToAggressiveBidPool(address _owner, address _nft_address, uint256 _tokenId) external override whenNotPaused onlyAggressiveBidPool {
+        _redeemFrom(_owner, aggressive_bid_pool_address, _nft_address, _tokenId);
     }
 
     /// @notice battle后，烧毁失败方的NFT
@@ -227,6 +227,10 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
     /// @param _tokenId NFT的tokenId
     /// @return NFT的拥有者地址
     function getNFTOwner(address _nft_address, uint256 _tokenId) external view override returns (address) {
+        return _getNFTOwner(_nft_address, _tokenId);
+    }
+
+    function _getNFTOwner(address _nft_address, uint256 _tokenId) private view returns (address) {
         for (uint256 i=0; i<users.length; i++) {
             for (uint256 j=0; j<users_staked_data[users[i]].length; j++) {
                 if (users_staked_data[users[i]][j].nftAddress == _nft_address && users_staked_data[users[i]][j].tokenId == _tokenId && users_staked_data[users[i]][j].amount > 0) {
@@ -247,6 +251,22 @@ contract NFTBattlePool is INFTBattlePool, Initializable, OwnableUpgradeable, Pau
         users.push(_user);
     }
 
+
+    function _redeemFrom(address _owner_address, address _to, address _nft_address, uint256 _tokenId) private {
+        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = _getUserStakedData(_owner_address, _nft_address, _tokenId);
+        require(_staked_data.amount > 0, "NFTBattle: NFT is not staked");
+        require(_staked_data.isFrozen == false, "NFTBattle: NFT is frozen");
+
+        require(_owner_address == _getNFTOwner(_nft_address, _tokenId), "NFTBattle: NFT is not owned by this address");
+
+        IERC721 _nft = IERC721(_nft_address);
+        require(_nft.ownerOf(_tokenId) == address(this), "NFTBattle: NFT is not owned by this contract");
+        _nft.transferFrom(address(this), _to, _tokenId);
+
+        _removeUserStakedData(_owner_address, _nft_address, _tokenId);
+
+        emit Redeemed(_owner_address, _nft_address, _tokenId);
+    }
     function _redeem(address _owner_address, address _nft_address, uint256 _tokenId) private {
         UserStakeStructs.BattlePoolUserStakedData memory _staked_data = _getUserStakedData(_owner_address, _nft_address, _tokenId);
         require(_staked_data.amount > 0, "NFTBattle: NFT is not staked");

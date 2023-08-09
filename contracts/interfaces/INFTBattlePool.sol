@@ -6,7 +6,7 @@ import "../libraries/UserStakeStructs.sol";
 
 interface INFTBattlePool {
     event SetNFTBattle(address new_nft_battle_address);
-    event SetAggressiveBid(address new_aggressive_bid_address);
+    event SetAggressiveBidPool(address new_aggressive_bid_address);
     event Staked(address indexed owner, address nft_address, uint256 tokenId);
     event Redeemed(address indexed to, address nft_address, uint256 tokenId);
     event BurnedNFT(address indexed loser, address nft_address, uint256 tokenId);
@@ -14,13 +14,13 @@ interface INFTBattlePool {
     event UnfrozenNFT(address indexed owner, address nft_address, uint256 tokenId, address beneficiary, uint256 amount);
 
     function nft_battle_address() external view returns (address);
-    function aggressive_bid_address() external view returns (address);
+    function aggressive_bid_pool_address() external view returns (address);
 
     function burn_to_address() external view returns (address);
 
     function setNFTBattle(address _nft_battle_address) external;
 
-    function setAggressiveBid(address _aggressive_bid_address) external;
+    function setAggressiveBidPool(address _aggressive_bid_address) external;
 
     function stake(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external;
 
@@ -30,7 +30,7 @@ interface INFTBattlePool {
 
     function redeemToOwner(address _owner_address, address _nft_address, uint256 _tokenId) external;
 
-    function redeemToAggressiveBidPool(address _nft_address, uint256 _tokenId) external;
+    function redeemToAggressiveBidPool(address _owner, address _nft_address, uint256 _tokenId) external;
 
     function burnNFT(address _loser_address, address _nft_address, uint256 _tokenId) external;
 

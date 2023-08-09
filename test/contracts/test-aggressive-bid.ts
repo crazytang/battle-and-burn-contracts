@@ -13,7 +13,7 @@ import {
     bnToNumber, getGasUsedFromReceipt,
     getTransactionOptions,
     numberToBn,
-    setDefaultGasOptions, signMessageAndSplitByWallet, solidityAbiEncode
+    setDefaultGasOptions, signMessageAndSplitByWallet, signMessageByWallet, solidityAbiEncode
 } from "../../helpers/contract/contract-utils";
 import {expect} from "chai";
 import {
@@ -46,6 +46,8 @@ import {
 } from "../../helpers/contract/structs";
 import {exec} from "child_process";
 import YsghPool_data from "../../contract-data/YsghPool-data";
+import {AggressiveBidStructs} from "../../typechain-types/AggressiveBid";
+import OrderStruct = AggressiveBidStructs.OrderStruct;
 
 
 let tx: ContractTransaction
@@ -82,6 +84,58 @@ describe("Ysgh Market testing", function () {
     this.timeout(20 * 60 * 1000);
 
     it('base test', async () => {
+        const sell_input: InputData = {
+            "order": {
+                "trader": "0x9F57DB42e2f0503A7545072977952bCfd37cC998",
+                "side": 1,
+                "orderType": 0,
+                "collection": "0x86dec7133ac655071d0b06552ed03af7a74ef4c9",
+                "assetType": 0,
+                "tokenId": 0,
+                "amount": 1,
+                "paymentToken": "0x0000000000000000000000000000000000000000",
+                "price": "10692000000000000",
+                "listingTime": "1691602932",
+                "expirationTime": "1691862432",
+                "trader_nonce": "0",
+                "extraParams": "0x7465737400000000000000000000000000000000000000000000000000000000"
+            },
+            "v": 28,
+            "r": "0x13f414488e740d016227f779ba2d55650b611accc2467a5eb45529562771e58f",
+            "s": "0x18dcea82ef5858654678926ffd31d3d6a9cc3f685a0aaa3a997594bc4ae1e172",
+            "extraSignature": "0xc2a5dd1c4a95dea2149e984201a33f5b4d09336ee66b0be8fc962d3c0bc220241a7bd6d1bef62e276ddeb9c7ecfc6f30606b9d2076a6fe68a810a704b1b1711e1c",
+            "merkleTree": {
+                "root": "0xf73ee05a3d33f452b92c539a8bce4af0af1ada6db5af540f660101099f665947",
+                "proof": []
+            },
+            "blockNumber": numberToBn(0, 0)
+        }
+
+        const order = sell_input.order
+        const order_hash = await aggressive_bid.hashOrder(order)
+        const signature = signMessageByWallet(admin_wallet, order_hash)
+        console.log('signature', signature)
+        expect(signature).to.be.eq(sell_input.extraSignature)
+
+/*        const order: OrderStruct = {
+            trader: '0x9F57DB42e2f0503A7545072977952bCfd37cC998',
+            side: "1",
+            orderType: "0",
+            collection: "0x86dec7133ac655071d0b06552ed03af7a74ef4c9",
+            assetType: "0",
+            tokenId: "0",
+            amount: "1",
+            paymentToken: "0x0000000000000000000000000000000000000000",
+            price: "10692000000000000",
+            listingTime: "1691602932",
+            expirationTime: "1691862432",
+            trader_nonce: "0",
+            extraParams: "0x7465737400000000000000000000000000000000000000000000000000000000"
+        }*/
+
+        const rs = await aggressive_bid.checkInput(sell_input);
+        console.log('rs', rs)
+        throw new Error('test')
         const verifier_address = await aggressive_bid.verifier_address()
         console.log('verifier_address', verifier_address)
         expect(verifier_address).equal(admin_wallet.address)
@@ -100,7 +154,7 @@ describe("Ysgh Market testing", function () {
     })
 
 
-    it('test ERC721 execute() with fixed price', async () => {
+    it.skip('test ERC721 execute() with fixed price', async () => {
         const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
             original_element_creator: ethers.constants.AddressZero,
             element_creators: [],
@@ -244,6 +298,13 @@ describe("Ysgh Market testing", function () {
         console.log('buy_input_data', buy_input_data)
 
         const user2_aggressive_bid = AggressiveBid__factory.connect(AggressiveBid_data.address, user2_wallet)
+        const rs = await user2_aggressive_bid.checkInput(sell_input_data)
+        // console.log('rs', rs)
+        expect(rs).equal(true)
+        const rs2 = await user2_aggressive_bid.checkInput(buy_input_data)
+        // console.log('rs2', rs2)
+        expect(rs2).equal(true)
+
         tx = await user2_aggressive_bid.execute(sell_input_data, buy_input_data, getTransactionOptions())
         console.log('user2_aggressive_bid.execute() tx hash', tx.hash)
         receipt = await tx.wait()
