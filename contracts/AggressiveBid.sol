@@ -1,5 +1,5 @@
-// ##deployed index: 15
-// ##deployed at: 2023/08/08 18:50:16
+// ##deployed index: 16
+// ##deployed at: 2023/08/10 03:06:39
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -193,8 +193,10 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         require(_order.tokenId >= 0, "AggressiveBid: tokenId must be greater or equal than 0");
         require(_order.amount > 0, "AggressiveBid: amount must be greater than 0");
         require(_order.price > 0, "AggressiveBid: price must be greater than 0");
-        require(_order.listingTime < block.timestamp, "AggressiveBid: listingTime must be less than current timestamp");
-        require(_order.expirationTime > block.timestamp, "AggressiveBid: expirationTime must be greater than current timestamp");
+        if (_order.side == AggressiveBidStructs.Side.Sell) {
+            require(_order.listingTime < block.timestamp, "AggressiveBid: listingTime must be less than current timestamp");
+            require(_order.expirationTime > block.timestamp, "AggressiveBid: expirationTime must be greater than current timestamp");
+        }
 
         if (_order.side == AggressiveBidStructs.Side.Buy) {
             require(_order.trader_nonce == nonces[_order.trader], "AggressiveBid: Buyer's trader_nonce must be equal to trader's nonce");

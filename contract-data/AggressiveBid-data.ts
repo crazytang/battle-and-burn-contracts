@@ -1,5 +1,5 @@
-// deployed_index: 15
-// deployed_at: 2023/08/08 18:50:16
+// deployed_index: 16
+// deployed_at: 2023/08/10 03:06:39
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBid_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const AggressiveBid_data: ProxyContractData = {
     contract_name: 'AggressiveBid',
     address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
     proxy_address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
-    target_address: '0xb8740699676058d740745e324112b296F768A1d8',
+    target_address: '0x579c79501DbA453851e40E44Db9a7fCdb3a088E0',
     libraries: [],
     abi:  [
     {
