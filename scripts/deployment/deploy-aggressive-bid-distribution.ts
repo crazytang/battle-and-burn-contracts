@@ -28,6 +28,13 @@ async function main() {
         console.log('setAggressiveBidDistribution() tx:', tx.hash)
         await tx.wait()
     }
+
+    const verifier_address_in_contract = await new_contract_proxy_contract.verifier_address()
+    if (verifier_address_in_contract !== admin_wallet.address) {
+        const tx = await new_contract_proxy_contract.setVerifierAddress(admin_wallet.address, getTransactionOptions())
+        console.log('setVerifierAddress() tx:', tx.hash)
+        await tx.wait()
+    }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

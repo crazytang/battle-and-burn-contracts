@@ -9,7 +9,7 @@ import {
 import {
     bnToNoPrecisionNumber, bnToNumber,
     getTransactionOptions, numberToBn,
-    setDefaultGasOptions
+    setDefaultGasOptions, signMessageByWallet
 } from "../../helpers/contract/contract-utils";
 import {
     AggressiveBidDistribution,
@@ -19,6 +19,8 @@ import {
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import AggressiveBidDistribution_data from "../../contract-data/AggressiveBidDistribution-data";
 import {expect} from "chai";
+import {AggressiveBidDistributionStructs} from "../../typechain-types/AggressiveBidDistribution";
+import ClaimRewardParamsStruct = AggressiveBidDistributionStructs.ClaimRewardParamsStruct;
 
 
 let tx: ContractTransaction
@@ -51,11 +53,11 @@ describe("Creation NFT testing", function () {
 
         expect(bid_royalty_rate/denominator).equal(0.0401)
 
-        const eth_balance_in_contract = bnToNumber(await provider.getBalance(aggressive_bid_distribution.address))
+        const eth_balance_in_contract = await provider.getBalance(aggressive_bid_distribution.address).toString()
         console.log('eth_balance_in_contract', eth_balance_in_contract)
 
-        const date = 20230808
-        const reward_amount_daily = (await aggressive_bid_distribution.getRewardAmountDaily(numberToBn(date, 0))).toString()
+        const date = 20230810
+        const reward_amount_daily = bnToNumber(await aggressive_bid_distribution.getRewardAmountDaily(numberToBn(date, 0)))
         console.log('reward_amount_daily', reward_amount_daily)
     })
 
@@ -92,6 +94,72 @@ describe("Creation NFT testing", function () {
         const zero_address_claimable_amount_after = bnToNumber(await aggressive_bid_distribution.getUserClaimableAmount(ethers.constants.AddressZero))
         console.log('zero_address_claimable_amount_after', zero_address_claimable_amount_after)
         expect(zero_address_claimable_amount_after).equal(zero_address_claimable_amount_before + transfer_amount)
+    })
+
+    it('test distributeDaily()', async ()=>{
+        /*
+        20230809
+["0xC32C4D9a03D84c3e331C6Aa5669b3226cA432FA3","0x9F57DB42e2f0503A7545072977952bCfd37cC998"]
+[1250000000000000,8498400000000]
+
+0x07ca3b293b87e52b918c6843d3e396c9d5316f18d4ea79edaaab7f332ebe32631431f96762dc243c99b5514f9a4981d3b4f3545d4c7cdc98c3c4f953002895e31c
+ipfs://QmPfBDLKHYYpDZe8Kn5xxctesvyd64dUvMwi4PEU1EkoAa/
+         */
+        const user1 = "0xC32C4D9a03D84c3e331C6Aa5669b3226cA432FA3"
+        const user2 = "0x9F57DB42e2f0503A7545072977952bCfd37cC998"
+        const user1_amount = bnToNumber(numberToBn(1250000000000000, 0))
+        const user2_amount = bnToNumber(numberToBn(8498400000000, 0))
+        console.log('user1_amount', user1_amount, user2_amount)
+        const date = 20230809
+        const reward_users = [user1,user2]
+        const reward_amounts = [numberToBn(user1_amount), numberToBn(user2_amount)]
+        const merkle_root = '0x8ee1513a7146a4ebb04a6af1f0ce99acd080e59f060970e125e7024f605802d7'
+        const signature2 = signMessageByWallet(admin_wallet, merkle_root)
+        console.log('signature2', signature2)
+        const signature = '0x07ca3b293b87e52b918c6843d3e396c9d5316f18d4ea79edaaab7f332ebe32631431f96762dc243c99b5514f9a4981d3b4f3545d4c7cdc98c3c4f953002895e31c'
+        // expect(signature).equal(signature2)
+        const ipfs_url = 'ipfs://QmPfBDLKHYYpDZe8Kn5xxctesvyd64dUvMwi4PEU1EkoAa/'
+
+        const user1_claimable_amount_before = bnToNumber(await aggressive_bid_distribution.getUserClaimableAmount(user1))
+        console.log('user1_claimable_amount_before', user1_claimable_amount_before)
+
+        const user2_claimable_amount_before = bnToNumber(await aggressive_bid_distribution.getUserClaimableAmount(user2))
+        console.log('user2_claimable_amount_before', user2_claimable_amount_before)
+
+        const reward_amount_daily_before = bnToNumber(await aggressive_bid_distribution.getRewardAmountDaily(numberToBn(date, 0)))
+        console.log('reward_amount_daily_before', reward_amount_daily_before)
+
+        if (reward_amount_daily_before == 0) {
+            console.log('reward_amount_daily_before is 0')
+            return
+        }
+        expect(reward_amount_daily_before).equal(user1_amount + user2_amount)
+
+        const claim_reward_params: ClaimRewardParamsStruct = {
+            date: date,
+            reward_users: reward_users,
+            reward_amounts: reward_amounts,
+            merkle_root: merkle_root,
+            extra_signature: signature2,
+            merkle_ipfs_uri: ipfs_url
+        }
+        console.log('claim_reward_params', claim_reward_params)
+
+        tx = await aggressive_bid_distribution.distributeDaily(claim_reward_params, getTransactionOptions())
+        console.log('aggressive_bid_distribution.distributeDaily() tx', tx.hash)
+        receipt = await tx.wait()
+
+        const user1_claimable_amount_after = bnToNumber(await aggressive_bid_distribution.getUserClaimableAmount(user1))
+        console.log('user1_claimable_amount_after', user1_claimable_amount_after)
+        expect(user1_claimable_amount_after).equal(user1_claimable_amount_before + user1_amount)
+
+        const user2_claimable_amount_after = bnToNumber(await aggressive_bid_distribution.getUserClaimableAmount(user2))
+        console.log('user2_claimable_amount_after', user2_claimable_amount_after)
+        expect(user2_claimable_amount_after).equal(user2_claimable_amount_before + user2_amount)
+
+        const reward_amount_daily_after = bnToNumber(await aggressive_bid_distribution.getRewardAmountDaily(numberToBn(date, 0)))
+        console.log('reward_amount_daily_after', reward_amount_daily_after)
+        expect(reward_amount_daily_after).equal(0)
     })
 })
 

@@ -1,5 +1,5 @@
-// deployed_index: 6
-// deployed_at: 2023/08/08 19:02:14
+// deployed_index: 9
+// deployed_at: 2023/08/10 18:19:07
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const AggressiveBidDistribution_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const AggressiveBidDistribution_data: ProxyContractData = {
     contract_name: 'AggressiveBidDistribution',
     address: '0x7082Feefe85Fe84f68076Ee352C21573E63c5e73',
     proxy_address: '0x7082Feefe85Fe84f68076Ee352C21573E63c5e73',
-    target_address: '0x002046A12120a8e4832faDeA522a39f4E99081b3',
+    target_address: '0x81dbCBb4f203bCEa219AfaA4b381469583f17F1C',
     libraries: [],
     abi:  [
     {
@@ -87,6 +87,24 @@ const AggressiveBidDistribution_data: ProxyContractData = {
           "internalType": "uint256[]",
           "name": "amounts",
           "type": "uint256[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "merkle_root",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "extra_signature",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "merkle_ipfs_uri",
+          "type": "string"
         }
       ],
       "name": "DistributedDaily",
@@ -148,6 +166,19 @@ const AggressiveBidDistribution_data: ProxyContractData = {
         }
       ],
       "name": "SetBidRoyaltyRate",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "verifier_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetVerifierAddress",
       "type": "event"
     },
     {
@@ -362,6 +393,19 @@ const AggressiveBidDistribution_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
+          "name": "_verifier_address",
+          "type": "address"
+        }
+      ],
+      "name": "setVerifierAddress",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
           "name": "newOwner",
           "type": "address"
         }
@@ -376,6 +420,19 @@ const AggressiveBidDistribution_data: ProxyContractData = {
       "name": "unpause",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "verifier_address",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
