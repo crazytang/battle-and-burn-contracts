@@ -1,5 +1,5 @@
-// ##deployed index: 6
-// ##deployed at: 2023/07/27 20:36:48
+// ##deployed index: 7
+// ##deployed at: 2023/08/10 14:35:27
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
@@ -9,6 +9,7 @@ import "./CreationNFT.sol";
 import "./interfaces/INFTBattlePool.sol";
 
 contract CreateNFTContract {
+    event CreatedNFT(address indexed creator, address indexed nft_address, uint256 indexed tokenId);
     constructor(){
 
     }
@@ -25,6 +26,7 @@ contract CreateNFTContract {
             INFTBattlePool(_nft_battle_pool_address).stakeFrom(_creation_nft_params.creator, address(_nft), _tokenId);
         }
 
+        emit CreatedNFT(_creation_nft_params.creator, address(_nft), _tokenId);
         return _nft;
     }
 }

@@ -102,7 +102,7 @@ describe("Ysgh Market testing", function () {
     })
 
 
-    it.skip('test ERC721 execute() with fixed price', async () => {
+    it('test ERC721 execute() with fixed price', async () => {
         const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
             original_element_creator: ethers.constants.AddressZero,
             element_creators: [],

@@ -50,9 +50,16 @@ describe("Creation NFT testing", function () {
         console.log('bid_royalty_rate', bid_royalty_rate)
 
         expect(bid_royalty_rate/denominator).equal(0.0401)
+
+        const eth_balance_in_contract = bnToNumber(await provider.getBalance(aggressive_bid_distribution.address))
+        console.log('eth_balance_in_contract', eth_balance_in_contract)
+
+        const date = 20230808
+        const reward_amount_daily = (await aggressive_bid_distribution.getRewardAmountDaily(numberToBn(date, 0))).toString()
+        console.log('reward_amount_daily', reward_amount_daily)
     })
 
-    it('transfer eth to contract', async ()=>{
+    it.skip('transfer eth to contract', async ()=>{
         const transfer_amount = 0.01
         console.log('transfer_amount', transfer_amount)
 

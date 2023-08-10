@@ -1,5 +1,5 @@
-// deployed_index: 73
-// deployed_at: 2023/08/08 16:11:37
+// deployed_index: 74
+// deployed_at: 2023/08/10 14:36:09
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattle_data: ProxyContractData = {
@@ -8,7 +8,7 @@ const NFTBattle_data: ProxyContractData = {
     contract_name: 'NFTBattle',
     address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
     proxy_address: '0x9784cD8F5BD43EfaEF2C3925C2a899614ed24604',
-    target_address: '0xa573F38d07bb625f8342875006A86E5dD0159Ad1',
+    target_address: '0x54d923770E525BFB6D3df820528FD9158F33F026',
     libraries: [],
     abi:  [
     {

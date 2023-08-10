@@ -1,18 +1,43 @@
-// deployed_index: 6
-// deployed_at: 2023/07/27 20:36:48
+// deployed_index: 7
+// deployed_at: 2023/08/10 14:35:27
 
 import {ContractData} from "../helpers/interfaces/contract_data_interface";
 const CreateNFTContract_data: ContractData = {
     env: 'test',
     network: 'arbitrum-goerli',
     contract_name: 'CreateNFTContract',
-    address: '0x745374fea697c9E320eeBfE292E9c46b62ba2c4f',
+    address: '0xe5757C7F05Db0F86F79bfA22700E387316bD7f07',
     libraries: [],
     abi:  [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "creator",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "nft_address",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "CreatedNFT",
+      "type": "event"
     },
     {
       "inputs": [
