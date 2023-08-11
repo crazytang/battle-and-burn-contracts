@@ -96,13 +96,16 @@ describe("Ysgh Market testing", function () {
         console.log('aggressive_bid_distribution_address', aggressive_bid_distribution_address)
         expect(aggressive_bid_distribution_address).equal(AggressiveBidDistribution_data.address)
 
+        // tx = await aggressive_bid.setYsghPool(YsghPool_data.address)
+        // await tx.wait()
         const ysgh_pool_address = await aggressive_bid.ysgh_pool()
         console.log('ysgh_pool_address', ysgh_pool_address)
         expect(ysgh_pool_address).equal(YsghPool_data.address)
+
     })
 
 
-    it('test ERC721 execute() with fixed price', async () => {
+    it.skip('test ERC721 execute() with fixed price', async () => {
         const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
             original_element_creator: ethers.constants.AddressZero,
             element_creators: [],

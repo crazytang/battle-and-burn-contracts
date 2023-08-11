@@ -1,16 +1,16 @@
-// deployed_index: 36
-// deployed_at: 2023/08/08 17:50:39
+// deployed_index: 45
+// deployed_at: 2023/08/10 23:55:36
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const YsghPool_data: ProxyContractData = {
-    env: 'dev',
+  env: 'dev',
     network: 'goerli',
     contract_name: 'YsghPool',
-    address: '0xD5c46DE212af1836543b1e1B8ebeFc4a71f29500',
-    proxy_address: '0xD5c46DE212af1836543b1e1B8ebeFc4a71f29500',
-    target_address: '0x9731AfB8b5a22283A0Be8132311AE633A185096e',
+  address: '0x7384Daa44f3a97d1542d8fb87612eAf711169759',
+  proxy_address: '0x7384Daa44f3a97d1542d8fb87612eAf711169759',
+  target_address: '0x2f0Acaa256C836AaFc23869C469f3a9117231271',
     libraries: [],
-    abi:  [
+  abi: [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
@@ -213,6 +213,31 @@ const YsghPool_data: ProxyContractData = {
         {
           "indexed": true,
           "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "WithdrawTo",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "to",
           "type": "address"
         },
@@ -279,7 +304,13 @@ const YsghPool_data: ProxyContractData = {
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_safe_multi_address",
+          "type": "address"
+        }
+      ],
       "name": "initialize",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -408,6 +439,24 @@ const YsghPool_data: ProxyContractData = {
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawTo",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "ysgh_market",
       "outputs": [
@@ -425,7 +474,7 @@ const YsghPool_data: ProxyContractData = {
       "type": "receive"
     }
   ],
-  
+
 };
 
 export default YsghPool_data;
