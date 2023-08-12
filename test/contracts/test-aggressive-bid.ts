@@ -96,12 +96,9 @@ describe("Ysgh Market testing", function () {
         console.log('aggressive_bid_distribution_address', aggressive_bid_distribution_address)
         expect(aggressive_bid_distribution_address).equal(AggressiveBidDistribution_data.address)
 
-        // tx = await aggressive_bid.setYsghPool(YsghPool_data.address)
-        // await tx.wait()
         const ysgh_pool_address = await aggressive_bid.ysgh_pool()
         console.log('ysgh_pool_address', ysgh_pool_address)
         expect(ysgh_pool_address).equal(YsghPool_data.address)
-
     })
 
 

@@ -10,7 +10,7 @@ export const setDefaultGasOptions = async function (provider: Provider) {
         return;
     }
 
-    const gas_limit = 20000000;
+    const gas_limit = 5000000;
     let gas_price: number;
     gas_price = BigNumber.from(await provider.getGasPrice()).toNumber();
 //    gas_price = 100*10**9
@@ -23,21 +23,33 @@ export const setDefaultGasOptions = async function (provider: Provider) {
     setTransactionOptions(transaction_options);
 }
 
-let tx_options = {};
+let tx_options: any = {};
 
 /**
  * 获取和设置gasLimit、gasPrice等选项
  * @param transaction_options
  */
-export const setTransactionOptions = (transaction_options: {}) => {
-    tx_options = transaction_options;
+export const setTransactionOptions = (transaction_options: {}):{} => {
+    return tx_options = transaction_options;
 }
 
 /**
  * 获取和设置gasLimit、gasPrice等选项
  */
-export const getTransactionOptions: any = (_line_='') => {
+// export const getTransactionOptions: any = (_line_='') => {
+//     // console.log('getTransactionOptions(',_line_,')', tx_options);
+//     return tx_options;
+// }
+
+export const getTransactionOptions: any = async (contract?: Contract, method?:string, params?:any[]) => {
     // console.log('getTransactionOptions(',_line_,')', tx_options);
+    if (contract == undefined || method == undefined || params == undefined) {
+        return tx_options;
+    }
+    let estimate = await contract.estimateGas[method](...params)
+    estimate = estimate.mul(120).div(100);
+    tx_options['gasLimit'] = estimate.toString();
+    console.log('tx_options', tx_options)
     return tx_options;
 }
 

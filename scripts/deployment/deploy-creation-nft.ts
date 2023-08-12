@@ -18,7 +18,7 @@ async function main() {
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
     if (DistributionPolicyV1_data == undefined || DistributionPolicyV1_data.address == '') {
-        throw new Error('RoyaltyDistributor not deployed')
+        throw new Error('DistributionPolicyV1 not deployed')
     }
 
     // 随便选两个用户作为element_creator

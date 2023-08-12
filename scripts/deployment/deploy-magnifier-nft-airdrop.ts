@@ -1,8 +1,13 @@
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
-import {bnToNumber, setDefaultGasOptions} from "../../helpers/contract/contract-utils";
+import {
+    bnToNumber,
+    getTransactionOptions,
+    numberToBn,
+    setDefaultGasOptions
+} from "../../helpers/contract/contract-utils";
 import {deploy_contract_to_file} from "../../helpers/contract/deploy-contract-to-files";
-import {ethers} from "ethers";
+import {ethers} from "hardhat";
 import {DistributionStructs} from "../../typechain-types/CreationNFT";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
 import {get_user_wallet_114a, get_user_wallet_d05a} from "../../helpers/wallets/user_wallet_getter";
@@ -19,8 +24,12 @@ async function main() {
     console.log('eth balance', bnToNumber(await admin_wallet.getBalance()))
 
     const contract = await deploy_contract_to_file(admin_wallet, contract_name, [MagnifierNFT_data.address, Math.floor((new Date("2023-08-22T00:00:00Z")).getTime()/1000)]);
+    console.log(contract_name + ' deployed address', contract.address)
 
-    console.log(contract_name + ' deployed address', contract.address);
+    const magnifierNFT = await ethers.getContractAt('MagnifierNFT', MagnifierNFT_data.address, admin_wallet)
+    const tx = await magnifierNFT.safeTransferFrom(admin_wallet.address, contract.address, 0, 100, '0x', getTransactionOptions())
+    console.log('magnifierNFT.safeTransferFrom() tx', tx.hash)
+    await tx.wait();
 }
 
 // We recommend this pattern to be able to use async/await everywhere

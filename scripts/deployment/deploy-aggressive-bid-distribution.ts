@@ -21,12 +21,14 @@ async function main() {
 
     console.log(contract_name, 'was deployed on implement address', new_contract.address, 'and proxy address', new_contract_proxy_contract.address);
 
-    const aggressive_bid = await ethers.getContractAt('AggressiveBid', AggressiveBid_data.address, admin_wallet)
-    const aggressive_bid_distribution_address_in_bid = await aggressive_bid.aggressive_bid_distribution()
-    if (aggressive_bid_distribution_address_in_bid !== new_contract_proxy_contract.address) {
-        const tx = await aggressive_bid.setAggressiveBidDistribution(new_contract_proxy_contract.address, getTransactionOptions())
-        console.log('setAggressiveBidDistribution() tx:', tx.hash)
-        await tx.wait()
+    if (AggressiveBid_data.address !== '') {
+        const aggressive_bid = await ethers.getContractAt('AggressiveBid', AggressiveBid_data.address, admin_wallet)
+        const aggressive_bid_distribution_address_in_bid = await aggressive_bid.aggressive_bid_distribution()
+        if (aggressive_bid_distribution_address_in_bid !== new_contract_proxy_contract.address) {
+            const tx = await aggressive_bid.setAggressiveBidDistribution(new_contract_proxy_contract.address, getTransactionOptions())
+            console.log('setAggressiveBidDistribution() tx:', tx.hash)
+            await tx.wait()
+        }
     }
 
     const verifier_address_in_contract = await new_contract_proxy_contract.verifier_address()

@@ -1,0 +1,25 @@
+{
+  "image": "ipfs://bafybeiehtsvh2xnk7m5njnbebbh3urwdrlg76quq26cag72apkbfo2vdu4/",
+  "attributes": [
+    {
+      "trait_type": "Level",
+      "value": "Basic"
+    },
+    {
+      "trait_type": "Magnification",
+      "value": "1x"
+    },
+    {
+      "trait_type": "Handle Color",
+      "value": "Yellow"
+    },
+    {
+      "trait_type": "Circle Color",
+      "value": "Purple"
+    },
+    {
+      "trait_type": "Transmittancy",
+      "value": "Normal"
+    }
+  ]
+}

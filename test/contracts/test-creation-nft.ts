@@ -27,7 +27,6 @@ import {
     fetchToUserRewardData, RoyaltyInfo,
     UserRewardData
 } from "../../helpers/contract/structs";
-import RoyaltyDistributor_data from "../../contract-data/RoyaltyDistributor-data";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import TreasuryData from "../../contract-data/Treasury-data";
 import {keccak256} from "@ethersproject/keccak256";

@@ -19,8 +19,8 @@ switch (process.env.APP_ENV) {
         break
     case 'production':
         l1_rpc = ''
-        l2_rpc = ''
-        throw Error('production rpc is empty')
+        l2_rpc = 'https://mainnet.infura.io/v3/b0ad1354b637443a871c602ec795fc71'
+        l2_rpc = 'https://eth-mainnet.g.alchemy.com/v2/bWhXs3Z1XxeReXb6YAQW4N6uXHJvQ1Bm'
         break
 }
 // provider = new ethers.providers.InfuraProvider("kovan", "b0ad1354b637443a871c602ec795fc71")

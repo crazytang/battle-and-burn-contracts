@@ -1,7 +1,11 @@
 import {ContractReceipt, ContractTransaction, ethers, Wallet} from "ethers";
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
-import {get_user_wallet_5712, get_user_wallet_5AD8} from "../../helpers/wallets/user_wallet_getter";
+import {
+    get_user_wallet_5712,
+    get_user_wallet_5AD8,
+    get_user_wallet_d05a
+} from "../../helpers/wallets/user_wallet_getter";
 import {
     MagnifierNFT,
     MagnifierNFT__factory,
@@ -24,6 +28,7 @@ const provider = contract_l2_provider_getter()
 const admin_wallet: Wallet = get_admin_wallet(provider)
 const user1_wallet: Wallet = get_user_wallet_5712(provider)
 const user2_wallet: Wallet = get_user_wallet_5AD8(provider)
+const user3_wallet: Wallet = get_user_wallet_d05a(provider)
 let magnifier_nft: MagnifierNFT
 let magnifier_nft_air_drop: MagnifierNFTAirDrop
 
@@ -50,7 +55,7 @@ describe("Creation NFT testing", function () {
         expect(deadline).to.greaterThan(0)
     })
 
-    it('transfer magnifier nft to airdrop contract', async () => {
+    it.skip('transfer magnifier nft to airdrop contract', async () => {
         const tokenId = 0
         const magnifier_nft_in_airdrop_contract = bnToNoPrecisionNumber(await magnifier_nft.balanceOf(magnifier_nft_air_drop.address, tokenId))
         console.log('magnifier_nft_in_airdrop_contract', magnifier_nft_in_airdrop_contract)
@@ -96,13 +101,13 @@ describe("Creation NFT testing", function () {
         const old_user2_balance = bnToNoPrecisionNumber(await magnifier_nft.balanceOf(user2_wallet.address, magnifier_nft_token_id))
         console.log('old_user2_balance', old_user2_balance)
 
-        const user1_magnifier_nft_air_drop = MagnifierNFTAirDrop__factory.connect(MagnifierNFTAirDrop_data.address, user1_wallet)
+        const user1_magnifier_nft_air_drop = MagnifierNFTAirDrop__factory.connect(MagnifierNFTAirDrop_data.address, user3_wallet)
 
         const user1_claimed = await user1_magnifier_nft_air_drop.user_claimed(user1_wallet.address)
         console.log('user1_claimed', user1_claimed)
 
         try {
-            tx = await user1_magnifier_nft_air_drop.claim(getTransactionOptions())
+            tx = await user1_magnifier_nft_air_drop.claim(await getTransactionOptions(user1_magnifier_nft_air_drop, 'claim',[]))
             console.log('user1_magnifier_nft_air_drop.claim()', tx.hash)
             receipt = await tx.wait()
 

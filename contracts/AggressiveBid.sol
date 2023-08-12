@@ -1,5 +1,5 @@
-// ##deployed index: 21
-// ##deployed at: 2023/08/10 03:33:29
+// ##deployed index: 22
+// ##deployed at: 2023/08/11 19:26:37
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -201,31 +201,6 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         if (_order.side == AggressiveBidStructs.Side.Buy) {
             require(_order.trader_nonce == nonces[_order.trader], "AggressiveBid: Buyer's trader_nonce must be equal to trader's nonce");
         }
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
-     */
-    function uint256ToString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 
     function _checkOrderMath(AggressiveBidStructs.Input calldata _sell, AggressiveBidStructs.Input calldata _buy) private pure {

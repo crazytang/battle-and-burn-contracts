@@ -33,7 +33,7 @@ async function main() {
     }
 
     const aggressive_bid_pool_address = await new_contract_proxy_contract.aggressive_bid_pool_address()
-    if (aggressive_bid_pool_address !== AggressiveBidPool_data.address) {
+    if (AggressiveBidPool_data.address != '' && aggressive_bid_pool_address !== AggressiveBidPool_data.address) {
         const tx = await new_contract_proxy_contract.setAggressiveBidPool(AggressiveBidPool_data.address, getTransactionOptions())
         console.log('new_contract_proxy_contract.setAggressiveBidPool() tx', tx.hash)
         await tx.wait()
