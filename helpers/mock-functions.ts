@@ -1,5 +1,11 @@
 
-import {getTransactionOptions, numberToBn, signMessageByWallet, solidityAbiEncode} from "./contract/contract-utils";
+import {
+    getGasUsedAndGasPriceFromReceipt,
+    getTransactionOptions,
+    numberToBn,
+    signMessageByWallet,
+    solidityAbiEncode
+} from "./contract/contract-utils";
 import {BigNumber, Contract, ethers, Wallet} from "ethers";
 import {MerkleTreeService} from "../libs/merkle-tree-service";
 import {joinSignature} from "@ethersproject/bytes";
@@ -170,6 +176,11 @@ export const deployCreationNFT = async (admin_wallet: Wallet, name: string, symb
     let contract_data = await import('../data/compiled-data/CreationNFT.json')
     let contract_factory = new ethers.ContractFactory(contract_data.abi, contract_data.bytecode, admin_wallet)
     // contract_factory = contract_factory.connect(admin_wallet)
-    const new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
-    return await new_contract.deployed()
+    let new_contract = await contract_factory.deploy(name, symbol, baseURI, distributionParams, DistributionPolicyV1_data.address, getTransactionOptions())
+    new_contract = await new_contract.deployed()
+
+    const receipt = await new_contract.provider.getTransactionReceipt(new_contract.deployTransaction.hash)
+    console.log('deployCreationNFT gas used', getGasUsedAndGasPriceFromReceipt(receipt))
+
+    return new_contract
 }

@@ -12,7 +12,7 @@ import {
     NFTBattle__factory, NFTBattlePool, NFTBattlePool__factory
 } from "../../typechain-types";
 import {
-    bnToNoPrecisionNumber,
+    bnToNoPrecisionNumber, getGasUsedAndGasPriceFromReceipt,
     getTransactionOptions,
     numberToBn,
     setDefaultGasOptions,
@@ -30,6 +30,10 @@ import {fetchToNFTData} from "../../helpers/contract/structs";
 import {randomInt} from "crypto";
 import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
+import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
+import {deployCreationNFT} from "../../helpers/mock-functions";
+import {DistributionStructs} from "../../typechain-types/NFTBattle";
+import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
 
 
 let tx: ContractTransaction
@@ -60,40 +64,38 @@ describe("NFTBattle.sol testing", function () {
     this.timeout(20 * 60 * 1000);
 
     it('test base', async () => {
-        const user_address = '0x9F57DB42e2f0503A7545072977952bCfd37cC998'
-        const nft_address = '0x86dec7133ac655071d0b06552ed03af7a74ef4c9'
-        const tokenId = 0
+        const nft_battle_address = await nft_battle_pool.nft_battle_address()
+        console.log('nft_battle_address', nft_battle_address)
+        expect(nft_battle_address).to.be.equal(nft_battle.address)
 
-        const user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(user_address, nft_address, tokenId))
-        console.log('user_staked_data', user_staked_data)
-
-        const owner_in_pool = await nft_battle_pool.getNFTOwner(nft_address, tokenId)
-        console.log('owner_in_pool', owner_in_pool)
-        expect(owner_in_pool).to.be.equal(user_address)
-
-        const nft_contract: IERC721 = IERC721__factory.connect(nft_address, admin_wallet)
-        const owner_in_nft = await nft_contract.ownerOf(tokenId)
-        const is_approved = await nft_contract.getApproved(tokenId)
-        tx = await nft_contract.approve(user_address, tokenId, getTransactionOptions())
+        const aggressive_bid_pool_address = await nft_battle_pool.aggressive_bid_pool_address()
+        console.log('aggressive_bid_pool_address', aggressive_bid_pool_address)
+        expect(aggressive_bid_pool_address).to.be.equal(AggressiveBidPool_data.address)
     })
 
-    it.skip('test stake() and redeem()', async () => {
+    it('test stake() and redeem()', async () => {
         const tokenId = 0
 
         // approve and stake
         const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
+        const distributionParams: DistributionRoleParamsStruct = {
+            original_element_creator: ethers.constants.AddressZero,
+            element_creators: [],
+            element_quote_element_creators: []
+        }
+        const owner_creation_nft = await deployCreationNFT(admin_wallet, 'test', 'test', 'ipfs://test', distributionParams)
         const owner = admin_wallet.address
         const spender = nft_battle_pool.address
-        const nonce = await creation_nft.nonces(owner)
+        const nonce = await owner_creation_nft.nonces(owner)
         const deadline = nowTimestamp() + 60*3
 
-        const old_user_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(admin_wallet.address))
+        const old_user_nft_balance = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(admin_wallet.address))
         console.log('old_user_nft_balance', old_user_nft_balance)
 
-        const old_pool_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(nft_battle_pool.address))
+        const old_pool_nft_balance = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(nft_battle_pool.address))
         console.log('old_pool_nft_balance', old_pool_nft_balance)
 
-        const old_user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        const old_user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
         console.log('old_user_staked_data', old_user_staked_data)
 
         // sign to approve
@@ -120,38 +122,40 @@ describe("NFTBattle.sol testing", function () {
                 console.log('creation_nft.approveBySig() tx', tx.hash)
                 await tx.wait()*/
 
-        tx = await nft_battle_pool.stake(creation_nft.address, approval_data, getTransactionOptions())
+        tx = await nft_battle_pool.stake(owner_creation_nft.address, approval_data, getTransactionOptions())
         console.log('nft_battle_pool.stake() tx', tx.hash)
-        await tx.wait()
+        receipt = await tx.wait()
+        console.log('nft_battle_pool.stake() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_user_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(admin_wallet.address))
+        const new_user_nft_balance = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(admin_wallet.address))
         console.log('new_user_nft_balance', new_user_nft_balance)
         expect(new_user_nft_balance).to.equal(old_user_nft_balance - 1)
 
-        const new_pool_nft_balance = bnToNoPrecisionNumber(await creation_nft.balanceOf(nft_battle_pool.address))
+        const new_pool_nft_balance = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(nft_battle_pool.address))
         console.log('new_pool_nft_balance', new_pool_nft_balance)
         expect(new_pool_nft_balance).to.equal(old_pool_nft_balance + 1)
 
-        const new_user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        const new_user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
         console.log('new_user_staked_data', new_user_staked_data)
-        expect(new_user_staked_data.nftAddress).to.equal(creation_nft.address)
+        expect(new_user_staked_data.nftAddress).to.equal(owner_creation_nft.address)
         expect(new_user_staked_data.tokenId).to.equal(tokenId)
         expect(new_user_staked_data.amount).to.equal(1)
 
         // redeem
-        tx = await nft_battle_pool.redeem(creation_nft.address, tokenId, getTransactionOptions())
+        tx = await nft_battle_pool.redeem(owner_creation_nft.address, tokenId, getTransactionOptions())
         console.log('nft_battle_pool.redeem() tx', tx.hash)
-        await tx.wait()
+        receipt = await tx.wait()
+        console.log('nft_battle_pool.redeem() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_user_nft_balance2 = bnToNoPrecisionNumber(await creation_nft.balanceOf(admin_wallet.address))
+        const new_user_nft_balance2 = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(admin_wallet.address))
         console.log('new_user_nft_balance2', new_user_nft_balance2)
         expect(new_user_nft_balance2).to.equal(new_user_nft_balance + 1)
 
-        const new_pool_nft_balance2 = bnToNoPrecisionNumber(await creation_nft.balanceOf(nft_battle_pool.address))
+        const new_pool_nft_balance2 = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(nft_battle_pool.address))
         console.log('new_pool_nft_balance2', new_pool_nft_balance2)
         expect(new_pool_nft_balance2).to.equal(new_pool_nft_balance - 1)
 
-        const new_user_staked_data2 = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        const new_user_staked_data2 = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
         console.log('new_user_staked_data2', new_user_staked_data2)
         expect(new_user_staked_data2.amount).to.equal(0)
     })
@@ -168,7 +172,8 @@ describe("NFTBattle.sol testing", function () {
 
         tx = await creation_nft.mint(admin_wallet.address, tokenId, getTransactionOptions())
         console.log('creation_nft.mint() tx', tx.hash)
-        await tx.wait()
+        receipt = await tx.wait()
+        console.log('creation_nft.mint() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // approve and stake
 // approve and stake
@@ -207,7 +212,8 @@ describe("NFTBattle.sol testing", function () {
 
         tx = await nft_battle_pool.stake(creation_nft.address, approval_data, getTransactionOptions())
         console.log('nft_battle_pool.stake() tx', tx.hash)
-        await tx.wait()
+        receipt = await tx.wait()
+        console.log('nft_battle_pool.stake() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         const new_user_staked_data = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
         console.log('new_user_staked_data', new_user_staked_data)
@@ -218,7 +224,8 @@ describe("NFTBattle.sol testing", function () {
         // burn
         tx = await nft_battle_pool.burnNFT(admin_wallet.address, creation_nft.address, tokenId, getTransactionOptions())
         console.log('nft_battle_pool.burnNFT() tx', tx.hash)
-        await tx.wait()
+        receipt = await tx.wait()
+        console.log('nft_battle_pool.burnNFT() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         const new_user_staked_data2 = fetchToNFTData(await nft_battle_pool.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
         console.log('new_user_staked_data2', new_user_staked_data2)

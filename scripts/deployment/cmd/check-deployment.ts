@@ -87,6 +87,7 @@ async function main() {
         console.warn('symbol in magnifier is not correct')
     }
     let baseURI = await magnifier.baseURI()
+    console.log('baseURI', baseURI)
     if (baseURI.indexOf('ipfs://') === -1) {
         console.warn('baseURI in magnifier is not correct')
     }

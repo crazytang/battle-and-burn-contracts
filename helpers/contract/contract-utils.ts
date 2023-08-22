@@ -10,7 +10,7 @@ export const setDefaultGasOptions = async function (provider: Provider) {
         return;
     }
 
-    const gas_limit = 5000000;
+    const gas_limit = 20000000;
     let gas_price: number;
     gas_price = BigNumber.from(await provider.getGasPrice()).toNumber();
 //    gas_price = 100*10**9
@@ -41,15 +41,17 @@ export const setTransactionOptions = (transaction_options: {}):{} => {
 //     return tx_options;
 // }
 
-export const getTransactionOptions: any = async (contract?: Contract, method?:string, params?:any[]) => {
+export const getTransactionOptions: any = (contract?: Contract, method?:string, params?:any[]) => {
     // console.log('getTransactionOptions(',_line_,')', tx_options);
-    if (contract == undefined || method == undefined || params == undefined) {
-        return tx_options;
-    }
+    console.log('tx_options', tx_options)
+    return tx_options;
+}
+
+export const getEstimateTransactionOptions: any = async (contract: Contract, method:string, params:any[]) => {
     let estimate = await contract.estimateGas[method](...params)
     estimate = estimate.mul(120).div(100);
     tx_options['gasLimit'] = estimate.toString();
-    console.log('tx_options', tx_options)
+    console.log('estimate tx_options', tx_options)
     return tx_options;
 }
 
@@ -151,6 +153,10 @@ export const recoverAddressFromSignedMessageAndSplit = (message: string, r:strin
 
 export const getGasUsedFromReceipt = (receipt: ContractReceipt): number => {
     return bnToNumber(receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice))
+}
+
+export const getGasUsedAndGasPriceFromReceipt = (receipt: ContractReceipt): [number, number] => {
+    return [receipt.cumulativeGasUsed.toNumber(), receipt.effectiveGasPrice.toNumber()]
 }
 
 export const getLogFromReceipt = (receipt: ContractReceipt, contract: Contract,  event_name: string): any => {

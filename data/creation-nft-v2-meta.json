@@ -1,0 +1,21 @@
+{
+  "image": "[image]",
+  "name": "Element Ocean Creation NFT Collection #[tokenId]",
+  "attributes": [
+    {
+      "trait_type": "[trait_type]",
+      "value": "[value]"
+    }
+  ],
+  "description": "[description]",
+  "external_url": "https://elementocean.io/",
+  "distribution_roles": {
+    "creator": "[creator]",
+    "element_creators": [
+      "[element_creators]"
+    ],
+    "element_quote_element_creators": [
+      "[element_quote_element_creators]"
+    ]
+  }
+}

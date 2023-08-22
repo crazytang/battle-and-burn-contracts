@@ -44,8 +44,8 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         require(_aggressive_bid_pool.isContract(), "AggressiveBid: _aggressive_bid_pool is not a contract address");
         aggressive_bid_pool = IAggressiveBidPool(_aggressive_bid_pool);
 
-            require(_ysgh_pool_address.isContract(), "AggressiveBid: _ysgh_pool_address is not a contract address");
-            ysgh_pool = IYsghPool(_ysgh_pool_address);
+        require(_ysgh_pool_address.isContract(), "AggressiveBid: _ysgh_pool_address is not a contract address");
+        ysgh_pool = IYsghPool(_ysgh_pool_address);
     }
 
     function pause() external onlyOwner {
@@ -95,17 +95,17 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         _checkOrderParameter(_buy.order);
 
         _checkOrderMath(_sell, _buy);
-        _checkOrderAuthentication(_sell.order, _sell_order_hash, _sell.v, _sell.r, _sell.s);
-        _checkOrderAuthentication(_buy.order, _buy_order_hash, _buy.v, _buy.r, _buy.s);
+        _checkOrderAuthentication(_sell.order.trader, _sell_order_hash, _sell.v, _sell.r, _sell.s);
+        _checkOrderAuthentication(_buy.order.trader, _buy_order_hash, _buy.v, _buy.r, _buy.s);
 
         _checkOrderExtraSignature(_sell_order_hash, _sell.extraSignature);
         _checkOrderExtraSignature(_buy_order_hash, _buy.extraSignature);
 
         if (_sell.order.orderType != AggressiveBidStructs.OrderType.FixedPrice) {
-            _checkOrderMerkleProof(_buy, _buy_order_hash);
+            _checkOrderMerkleProof(_buy.merkleTree.proof, _buy.merkleTree.root, _buy_order_hash);
         }
 
-        _fundsTransfer(_sell.order, _buy.order);
+        _fundsTransfer(_sell.order.trader, _buy.order.price, _buy.order.trader, _buy.order.paymentToken);
         _tokensTransfer(_sell.order.collection, _sell.order.trader, _buy.order.trader, _sell.order.tokenId, _sell.order.amount);
 
         cancelled_or_filled[_sell_order_hash] = true;
@@ -124,31 +124,31 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
     function checkInput(AggressiveBidStructs.Input calldata _input) external view override returns (bool) {
         bytes32 _order_hash = _hashOrder(_input.order);
         _checkOrderParameter(_input.order);
-        _checkOrderAuthentication(_input.order, _order_hash, _input.v, _input.r, _input.s);
+        _checkOrderAuthentication(_input.order.trader, _order_hash, _input.v, _input.r, _input.s);
         _checkOrderExtraSignature(_order_hash, _input.extraSignature);
         return true;
     }
 
-    function _fundsTransfer(AggressiveBidStructs.Order calldata _sell_order, AggressiveBidStructs.Order calldata _buy_order) internal {
+    function _fundsTransfer(address _sell_trader, uint256 _buy_price, address _buy_trader, address _buy_payment_token) internal {
         uint96 _transfer_fee_numberator = aggressive_bid_distribution.bid_royalty_rate();
         uint96 _fee_denominator = aggressive_bid_distribution.denominator();
 
         require(_transfer_fee_numberator <= _fee_denominator,
             "AggressiveBid: transfer fee numberator must be less than or equal to fee denominator");
 
-        uint256 _fee = _buy_order.price * _transfer_fee_numberator / _fee_denominator;
+        uint256 _fee = _buy_price * _transfer_fee_numberator / _fee_denominator;
 
-        uint256 _to_seller_amount = _buy_order.price - _fee;
+        uint256 _to_seller_amount = _buy_price - _fee;
 
-        if (_buy_order.paymentToken == address(0)) {
-            uint256 _user_balance_in_pool = ysgh_pool.getUserBalance(_buy_order.trader);
-            require(_user_balance_in_pool >= _buy_order.price,
+        if (_buy_payment_token == address(0)) {
+            uint256 _user_balance_in_pool = ysgh_pool.getUserBalance(_buy_trader);
+            require(_user_balance_in_pool >= _buy_price,
                 "AggressiveBid: user's YSGH balance in pool must be greater or equal than price");
 
-            ysgh_pool.transferFrom(_buy_order.trader, _sell_order.trader, _to_seller_amount);
+            ysgh_pool.transferFrom(_buy_trader, _sell_trader, _to_seller_amount);
 
             // 提取分润到分润合约
-            ysgh_pool.transferFrom(_buy_order.trader, address(this) , _fee);
+            ysgh_pool.transferFrom(_buy_trader, address(this) , _fee);
             ysgh_pool.withdrawTo(address(aggressive_bid_distribution), _fee);
 
         } else {
@@ -213,8 +213,8 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         require(_buy.order.amount == _sell.order.amount, "AggressiveBid: amount must be equal to buy amount");
     }
 
-    function _checkOrderAuthentication(AggressiveBidStructs.Order calldata _order, bytes32 _order_hash, uint8 v, bytes32 r, bytes32 s) private pure {
-        require(_order_hash.recover(v, r, s) == _order.trader, "AggressiveBid: order signature is invalid");
+    function _checkOrderAuthentication(address _order_trader, bytes32 _order_hash, uint8 v, bytes32 r, bytes32 s) private pure {
+        require(_order_hash.recover(v, r, s) == _order_trader, "AggressiveBid: order signature is invalid");
     }
 
     function _checkOrderExtraSignature(bytes32 _extra_hash, bytes calldata _extra_signature) private view {
@@ -222,9 +222,8 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
             "AggressiveBid: order extra signature is invalid");
     }
 
-    function _checkOrderMerkleProof(AggressiveBidStructs.Input calldata _buy, bytes32 _order_hash) private pure {
-        require(MerkleProof.verify(_buy.merkleTree.proof, _buy.merkleTree.root, _order_hash),
+    function _checkOrderMerkleProof(bytes32[] memory _proof, bytes32 _root, bytes32 _order_hash) private pure {
+        require(MerkleProof.verify(_proof, _root, _order_hash),
             "AggressiveBid: order merkle proof is invalid");
     }
-
 }

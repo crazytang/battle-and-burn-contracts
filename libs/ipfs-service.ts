@@ -20,7 +20,7 @@ export class IpfsService {
     }
 
     async uploadFile(file_name: string): Promise<string> {
-        const action = '/api/v0/add'
+        const action = '/api/v0/add?cid-version=1'
         const url = this.gateway + action
         // console.log('url', url)
         const formData = new FormData();
