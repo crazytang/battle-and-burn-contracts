@@ -1,12 +1,12 @@
-// deployed_index: 51
-// deployed_at: 2023/08/22 09:51:29
+// deployed_index: 52
+// deployed_at: 2023/08/27 15:41:36
 
 import {ContractData} from "../helpers/interfaces/contract_data_interface";
 const CreationNFTV2_data: ContractData = {
     env: 'dev',
     network: 'arbitrum-goerli',
     contract_name: 'CreationNFTV2',
-    address: '0x6eCe4D9e6390150096E09f265d2581066E874E78',
+    address: '0x5cD86F0c996D480f25dC6071e4a5E9894Fa4EC11',
     libraries: [],
     abi:  [
     {
@@ -314,11 +314,34 @@ const CreationNFTV2_data: ContractData = {
         },
         {
           "internalType": "bytes32",
-          "name": "_tokenHash",
+          "name": "_tokenMetaHash",
           "type": "bytes32"
         }
       ],
       "name": "mint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "_tokenMetaHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "mintTo",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

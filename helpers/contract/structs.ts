@@ -1,6 +1,6 @@
 import {DistributionStructs} from "../../typechain-types/CreationNFT";
 import UserRewardDataStructOutput = DistributionStructs.UserRewardDataStructOutput;
-import {BigNumber} from "ethers";
+import {BigNumber, BigNumberish, BytesLike} from "ethers";
 import {bnToDate, bnToNoPrecisionNumber, bnToNumber} from "./contract-utils";
 import DistributionRoleStructOutput = DistributionStructs.DistributionRoleStructOutput;
 import {AggressiveBidStructs} from "../../typechain-types/AggressiveBid";
@@ -90,6 +90,46 @@ export const fetchToNFTData = (data: any): NFTData => {
 
 export interface MatchData {
     matchId: string
+    matchStartTime: number
+    matchEndTime: number
+    voteCount: number
+    voteArenaCount: number
+    voteChallengeCount: number
+    arenaOwner: string
+    arenaNFT: string
+    arenaTokenId: number
+    challengeOwner: string
+    challengeNFT: string
+    challengeTokenId: number
+    merkleTreeRoot: string
+    winner: Winner
+    determinedAt: number
+}
+export enum Winner {
+    Arena, Challenge
+}
+
+export const fetchToMatchData = (data: any): MatchData => {
+    return {
+        matchId: data['matchId'],
+        matchStartTime: bnToNoPrecisionNumber(data['matchStartTime']),
+        matchEndTime: bnToNoPrecisionNumber(data['matchEndTime']),
+        voteCount: bnToNoPrecisionNumber(data['voteCount']),
+        voteArenaCount: bnToNoPrecisionNumber(data['voteArenaCount']),
+        voteChallengeCount: bnToNoPrecisionNumber(data['voteChallengeCount']),
+        arenaOwner: data['arenaOwner'],
+        arenaNFT: data['arenaNFT'],
+        arenaTokenId: bnToNoPrecisionNumber(data['arenaTokenId']),
+        challengeOwner: data['challengeOwner'],
+        challengeNFT: data['challengeNFT'],
+        challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
+        merkleTreeRoot: data['merkleTreeRoot'],
+        winner: data['winner'],
+        determinedAt: bnToNoPrecisionNumber(data['determinedAt'])
+    }
+}
+export interface MatchDataParam {
+    matchId: string
     matchListTime: number
     matchStartTime: number
     matchEndTime: number
@@ -97,45 +137,38 @@ export interface MatchData {
     voteArenaCount: number
     voteChallengeCount: number
     arenaJPG: string
-    arenaJPGOwner: string
+    arenaOwner: string
     arenaNFT: string
     arenaTokenId: number
     arenaOwnerSignature: string
     challengeJPG: string
-    challengeJPGOwner: string
+    challengeOwner: string
     challengeNFT: string
     challengeTokenId: number
     challengeOwnerSignature: string
     merkleTreeURI: string
     merkleTreeRoot: string
     extraSignature: string
-    burnedAt: number
 }
-
-export const fetchToMatchData = (data: any): MatchData => {
-    return {
-        matchId: data['matchId'],
-        matchListTime: bnToNoPrecisionNumber(data['matchListTime']),
-        matchStartTime: bnToNoPrecisionNumber(data['matchStartTime']),
-        matchEndTime: bnToNoPrecisionNumber(data['matchEndTime']),
-        voteCount: bnToNoPrecisionNumber(data['voteCount']),
-        voteArenaCount: bnToNoPrecisionNumber(data['voteArenaCount']),
-        voteChallengeCount: bnToNoPrecisionNumber(data['voteChallengeCount']),
-        arenaJPG: data['arenaJPG'],
-        arenaJPGOwner: data['arenaJPGOwner'],
-        arenaNFT: data['arenaNFT'],
-        arenaTokenId: bnToNoPrecisionNumber(data['arenaTokenId']),
-        arenaOwnerSignature: data['arenaOwnerSignature'],
-        challengeJPG: data['challengeJPG'],
-        challengeJPGOwner: data['challengeJPGOwner'],
-        challengeNFT: data['challengeNFT'],
-        challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
-        challengeOwnerSignature: data['challengeOwnerSignature'],
-        extraSignature: data['extraSignature'],
-        merkleTreeURI: data['merkleTreeURI'],
-        merkleTreeRoot: data['merkleTreeRoot'],
-        burnedAt: bnToNoPrecisionNumber(data['burnedAt'])
-    }
+export interface UserVote  {
+    matchId: string
+    voter: string
+    votedNFT: string
+    votedTokenId: number
+    votedJPG: string
+    NFTOwner: string
+    votedAt: number
+    extraSignature: string
+}
+export interface ApprovalData {
+    userAddress: string
+    spender: string
+    tokenId: number
+    nonce: number
+    deadline: number
+    v: number
+    r: string
+    s: string
 }
 
 export interface BidPoolUserStakedData {

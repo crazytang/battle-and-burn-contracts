@@ -1,5 +1,5 @@
-// ##deployed index: 51
-// ##deployed at: 2023/08/22 09:51:29
+// ##deployed index: 52
+// ##deployed at: 2023/08/27 15:41:36
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -26,7 +26,7 @@ contract CreationNFTV2 is ICreationNFTV2, IApproveBySig, ERC721Enumerable, ERC29
     ICreationRewardPool public override creation_reward_pool;
 
     // tokenId => tokenHash
-    mapping(uint256 => bytes32) private tokenHashes;
+    mapping(uint256 => bytes32) private tokenMetaHashes;
 
     // User address => nonce
     mapping(address => uint256) public override nonces;
@@ -46,16 +46,24 @@ contract CreationNFTV2 is ICreationNFTV2, IApproveBySig, ERC721Enumerable, ERC29
     }
 
     /// @notice 铸造
-    function mint(uint256 _tokenId, bytes32 _tokenHash) external {
+    function mint(uint256 _tokenId, bytes32 _tokenMetaHash) external {
         require(_tokenId == totalSupply(), "CreationNFT: _tokenId must be equal to totalSupply");
 
-        tokenHashes[_tokenId] = _tokenHash;
+        tokenMetaHashes[_tokenId] = _tokenMetaHash;
         _mint(msg.sender, _tokenId);
+    }
+
+    /// @notice 铸造给指定地址
+    function mintTo(address _to, uint256 _tokenId, bytes32 _tokenMetaHash) external override {
+        require(_tokenId == totalSupply(), "CreationNFT: _tokenId must be equal to totalSupply");
+
+        tokenMetaHashes[_tokenId] = _tokenMetaHash;
+        _mint(_to, _tokenId);
     }
 
     function burn(uint256 _tokenId) external override {
         require(_isApprovedOrOwner(msg.sender, _tokenId), "CreationNFT: caller is not owner nor approved");
-        delete tokenHashes[_tokenId];
+        delete tokenMetaHashes[_tokenId];
 
         _burn(_tokenId);
     }

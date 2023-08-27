@@ -1,5 +1,6 @@
 
 import {
+    bnToNoPrecisionNumber,
     getGasUsedAndGasPriceFromReceipt,
     getTransactionOptions,
     numberToBn,
@@ -16,6 +17,9 @@ import DistributionPolicyV1_data from "../contract-data/DistributionPolicyV1-dat
 import {DistributionStructs} from "../typechain-types/NFTBattle";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
 import {keccak256} from "@ethersproject/keccak256";
+import {CreationNFTV2, CreationNFTV2__factory} from "../typechain-types";
+import fs from "fs";
+import CreationNFTV2_data from "../contract-data/CreationNFTV2-data";
 
 export const makeNewOrder = (trader_address: string, side: OrderSide, orderType: OrderType, collection_address: string, assetType: AssetType, tokenId: number, amount: number, price: number, nonce: number, payment_token = ethers.constants.AddressZero): OrderStruct => {
     const now_timestamp = Math.floor((new Date()).getTime() / 1000)
@@ -183,4 +187,31 @@ export const deployCreationNFT = async (admin_wallet: Wallet, name: string, symb
     console.log('deployCreationNFT gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
     return new_contract
+}
+
+/**
+ * 铸造一个CreationNFT
+ * @param user_wallet 铸造者的钱包
+ * @return token_id
+ */
+export const mintACreationNFT = async (user_wallet: Wallet): Promise<number> => {
+    /*
+    铸造流程
+    1）生成tokenId的元数据，文件示例在 data/creation-nft-v2-meta.json
+    2）将元数据文件放到我们网站的指定目录下，获取目录的方式是 await creation_nft.baseURI()，完整路径是 baseURI + tokenId + '.json'
+    3）将元数据文件的内容进行hash，hash方法 ethers.utils.id('....')
+     */
+
+    const user_creation_nft: CreationNFTV2 = CreationNFTV2__factory.connect(CreationNFTV2_data.address, user_wallet)
+    // 使用totalSupply作为token_id
+    const new_token_id = await user_creation_nft.totalSupply()
+    const token_meta_content = fs.readFileSync(__dirname+'/../data/creation-nft-v2-meta.json').toString()
+    const token_meta_hash = ethers.utils.id(token_meta_content)
+
+    const tx = await user_creation_nft.mint(new_token_id, token_meta_hash)
+    console.log('creation_nft.mint() tx', tx.hash)
+    const receipt = await tx.wait()
+    console.log('creation_nft.mint() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
+
+    return bnToNoPrecisionNumber(new_token_id)
 }

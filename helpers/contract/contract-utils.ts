@@ -3,6 +3,7 @@ import {Provider} from "@ethersproject/abstract-provider";
 import axios from "axios";
 import {joinSignature, splitSignature} from "@ethersproject/bytes";
 import {Result} from "@ethersproject/abi";
+import {keccak256} from "@ethersproject/keccak256";
 
 export const setDefaultGasOptions = async function (provider: Provider) {
     const options = getTransactionOptions();
@@ -43,7 +44,7 @@ export const setTransactionOptions = (transaction_options: {}):{} => {
 
 export const getTransactionOptions: any = (contract?: Contract, method?:string, params?:any[]) => {
     // console.log('getTransactionOptions(',_line_,')', tx_options);
-    console.log('tx_options', tx_options)
+    // console.log('tx_options', tx_options)
     return tx_options;
 }
 
@@ -180,4 +181,8 @@ export const solidityAbiDecode = (types: string[], data: string): Result => {
 
 export const solidityAbiEncodePacked = (types: string[], values: any[]): string => {
     return ethers.utils.solidityPack(types, values)
+}
+
+export const solidityAbiEncodeAndKeccak256 = (types: string[], values: any[]): string => {
+    return keccak256(keccak256(solidityAbiEncode(types, values)))
 }

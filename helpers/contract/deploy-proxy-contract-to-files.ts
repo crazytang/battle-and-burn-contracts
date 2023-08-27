@@ -3,7 +3,7 @@ import {ethers} from "hardhat"
 import * as fs from "fs"
 import path from "path"
 import {TransactionReceipt} from "@ethersproject/abstract-provider"
-import {getTransactionOptions} from "./contract-utils"
+import {getGasUsedAndGasPriceFromReceipt, getTransactionOptions} from "./contract-utils"
 import {ProxyContractData} from "../interfaces/proxy_contract_data_interface"
 import {ContractData} from "../interfaces/contract_data_interface"
 import {ProxyAdmin, ProxyAdmin__factory} from "../../typechain-types"
@@ -26,7 +26,8 @@ export const deploy_proxy_contract = async function (contract_name: string, admi
     let contract_factory = await ethers.getContractFactory(contract_name)
     contract_factory = contract_factory.connect(admin_wallet)
     new_contract = await contract_factory.deploy(getTransactionOptions())
-    await new_contract.deployed()
+    new_contract = await new_contract.deployed()
+    console.log('deployed '+ contract_name +', gasUsed', getGasUsedAndGasPriceFromReceipt(await new_contract.provider.getTransactionReceipt(new_contract.deployTransaction.hash)))
 
     console.log(contract_name + ' address has been deployed to', new_contract.address)
 
@@ -80,6 +81,8 @@ export const deploy_proxy_contract = async function (contract_name: string, admi
 
         // 部署代理
         proxy_contract = await deploy_proxy_to_file(admin_wallet, contract_name, new_contract.address, call_data)
+        console.log('deployed '+ contract_name +' proxy, gasUsed', getGasUsedAndGasPriceFromReceipt(await proxy_contract.provider.getTransactionReceipt(proxy_contract.deployTransaction.hash)))
+
         contract_data.address = proxy_contract.address
         contract_data.proxy_address = proxy_contract.address
     }
@@ -265,6 +268,7 @@ export const upgradeContract = async function (admin_wallet: Wallet, contract_da
     const tx: ContractTransaction = await proxy_admin.upgrade(contract_data.proxy_address, contract_data.target_address, getTransactionOptions())
     console.log('proxy_admin.upgrade() tx', tx.hash)
     let receipt: TransactionReceipt = await tx.wait()
+    console.log('proxy_admin.upgrade() gasUsed', getGasUsedAndGasPriceFromReceipt(receipt))
 
     // 获取指定合约的代理合约地址
     /*const proxy_mapping_data = getProxyMappingData(for_contract_name)

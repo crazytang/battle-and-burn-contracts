@@ -15,6 +15,7 @@ interface ICreationNFTV2 {
 
     function setCreationRewardPool(address _creation_reward_pool_address) external;
     function mint(uint256 _tokenId, bytes32 _tokenHash) external;
+    function mintTo(address _to, uint256 _tokenId, bytes32 _tokenMetaHash) external;
     function burn(uint256 _tokenId) external;
 
 }
