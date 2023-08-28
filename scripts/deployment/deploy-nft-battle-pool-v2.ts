@@ -12,6 +12,7 @@ import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
 import {ContractTransaction} from "ethers";
 import {TransactionReceipt} from "@ethersproject/abstract-provider";
 import NFTBattleV2_data from "../../contract-data/NFTBattleV2-data";
+import AggressiveBidPoolV2_data from "../../contract-data/AggressiveBidPoolV2-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
@@ -42,8 +43,8 @@ async function main() {
     }
 
     const aggressive_bid_pool_address = await new_contract_proxy_contract.aggressive_bid_pool_address()
-    if (AggressiveBidPool_data.address != '' && aggressive_bid_pool_address !== AggressiveBidPool_data.address) {
-        tx = await new_contract_proxy_contract.setAggressiveBidPool(AggressiveBidPool_data.address, getTransactionOptions())
+    if (AggressiveBidPoolV2_data.address != '' && aggressive_bid_pool_address !== AggressiveBidPoolV2_data.address) {
+        tx = await new_contract_proxy_contract.setAggressiveBidPool(AggressiveBidPoolV2_data.address, getTransactionOptions())
         console.log('new_contract_proxy_contract.setAggressiveBidPool() tx', tx.hash)
         receipt = await tx.wait()
         console.log('new_contract_proxy_contract.setAggressiveBidPool() gasUsed', getGasUsedAndGasPriceFromReceipt(receipt))

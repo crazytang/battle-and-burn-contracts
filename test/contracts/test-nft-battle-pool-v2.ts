@@ -36,6 +36,7 @@ import {DistributionStructs} from "../../typechain-types/NFTBattle";
 import DistributionRoleParamsStruct = DistributionStructs.DistributionRoleParamsStruct;
 import NFTBattlePoolV2_data from "../../contract-data/NFTBattlePoolV2-data";
 import NFTBattleV2_data from "../../contract-data/NFTBattleV2-data";
+import AggressiveBidPoolV2_data from "../../contract-data/AggressiveBidPoolV2-data";
 
 
 let tx: ContractTransaction
@@ -68,11 +69,11 @@ describe("NFTBattle.sol testing", function () {
     it('test base', async () => {
         const nft_battle_address = await nft_battle_pool_v2.nft_battle_address()
         console.log('nft_battle_address', nft_battle_address)
-        expect(nft_battle_address).to.be.equal(nft_battle_v2.address)
+        expect(nft_battle_address).equal(nft_battle_v2.address)
 
         const aggressive_bid_pool_address = await nft_battle_pool_v2.aggressive_bid_pool_address()
         console.log('aggressive_bid_pool_address', aggressive_bid_pool_address)
-        expect(aggressive_bid_pool_address).to.be.equal(AggressiveBidPool_data.address)
+        expect(aggressive_bid_pool_address).equal(AggressiveBidPoolV2_data.address)
     })
 
     it('test stake() and redeem()', async () => {
@@ -97,8 +98,9 @@ describe("NFTBattle.sol testing", function () {
         const old_pool_nft_balance = bnToNoPrecisionNumber(await owner_creation_nft.balanceOf(nft_battle_pool_v2.address))
         console.log('old_pool_nft_balance', old_pool_nft_balance)
 
-        const old_user_staked_data = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
-        console.log('old_user_staked_data', old_user_staked_data)
+        const old_user_staked = await nft_battle_pool_v2.isStakedNFT(admin_wallet.address, owner_creation_nft.address, tokenId)
+        console.log('old_user_staked', old_user_staked)
+        expect(old_user_staked).to.false
 
         // sign to approve
         const hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, owner, spender, tokenId, nonce, deadline]))
@@ -120,10 +122,6 @@ describe("NFTBattle.sol testing", function () {
             v: v
         }
 
-        /*        tx = await creation_nft.approveBySig(owner, spender, tokenId, nonce, deadline, v, r, s, getTransactionOptions())
-                console.log('creation_nft.approveBySig() tx', tx.hash)
-                await tx.wait()*/
-
         tx = await nft_battle_pool_v2.stake(owner_creation_nft.address, approval_data, getTransactionOptions())
         console.log('nft_battle_pool_v2.stake() tx', tx.hash)
         receipt = await tx.wait()
@@ -137,11 +135,9 @@ describe("NFTBattle.sol testing", function () {
         console.log('new_pool_nft_balance', new_pool_nft_balance)
         expect(new_pool_nft_balance).to.equal(old_pool_nft_balance + 1)
 
-        const new_user_staked_data = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
-        console.log('new_user_staked_data', new_user_staked_data)
-        expect(new_user_staked_data.nftAddress).to.equal(owner_creation_nft.address)
-        expect(new_user_staked_data.tokenId).to.equal(tokenId)
-        expect(new_user_staked_data.amount).to.equal(1)
+        const new_user_staked = await nft_battle_pool_v2.isStakedNFT(admin_wallet.address, owner_creation_nft.address, tokenId)
+        console.log('new_user_staked', new_user_staked)
+        expect(new_user_staked).be.true
 
         // redeem
         tx = await nft_battle_pool_v2.redeem(owner_creation_nft.address, tokenId, getTransactionOptions())
@@ -157,12 +153,13 @@ describe("NFTBattle.sol testing", function () {
         console.log('new_pool_nft_balance2', new_pool_nft_balance2)
         expect(new_pool_nft_balance2).to.equal(new_pool_nft_balance - 1)
 
-        const new_user_staked_data2 = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, owner_creation_nft.address, tokenId))
-        console.log('new_user_staked_data2', new_user_staked_data2)
-        expect(new_user_staked_data2.amount).to.equal(0)
+        const new_user_staked2 = await nft_battle_pool_v2.isStakedNFT(admin_wallet.address, owner_creation_nft.address, tokenId)
+        console.log('new_user_staked2', new_user_staked2)
+        expect(new_user_staked2).to.false
 
-        const user2_staked_data_before = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(user2_wallet.address, owner_creation_nft.address, tokenId))
-        console.log('user2_staked_data_before', user2_staked_data_before)
+        const user2_staked_before = await nft_battle_pool_v2.isStakedNFT(user2_wallet.address, owner_creation_nft.address, tokenId)
+        console.log('user2_staked_before', user2_staked_before)
+        expect(user2_staked_before).to.false
 
         tx = await owner_creation_nft.approve(nft_battle_pool_v2.address, tokenId, getTransactionOptions())
         console.log('owner_creation_nft.approve() tx', tx.hash)
@@ -174,9 +171,9 @@ describe("NFTBattle.sol testing", function () {
         receipt = await tx.wait()
         console.log('nft_battle_pool_v2.stakeFrom() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const user2_staked_data_after = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(user2_wallet.address, owner_creation_nft.address, tokenId))
-        console.log('user2_staked_data_after', user2_staked_data_after)
-        expect(user2_staked_data_after.amount).equal(1)
+        const user2_staked_after = await nft_battle_pool_v2.isStakedNFT(user2_wallet.address, owner_creation_nft.address, tokenId)
+        console.log('user2_staked_after', user2_staked_after)
+        expect(user2_staked_after).be.true
 
         // revert
         const user2_nft_battle_pool_v2 = NFTBattlePoolV2__factory.connect(NFTBattlePoolV2_data.address, user2_wallet)
@@ -239,19 +236,19 @@ describe("NFTBattle.sol testing", function () {
                 console.log('creation_nft.approveBySig() tx', tx.hash)
                 await tx.wait()*/
 
-        const old_user_staked_data = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
-        console.log('old_user_staked_data', old_user_staked_data)
+        const old_user_staked = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        console.log('old_user_staked', old_user_staked)
 
         tx = await nft_battle_pool_v2.stake(creation_nft.address, approval_data, getTransactionOptions())
         console.log('nft_battle_pool_v2.stake() tx', tx.hash)
         receipt = await tx.wait()
         console.log('nft_battle_pool_v2.stake() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_user_staked_data = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
-        console.log('new_user_staked_data', new_user_staked_data)
-        expect(new_user_staked_data.nftAddress).to.equal(creation_nft.address)
-        expect(new_user_staked_data.tokenId).to.equal(tokenId)
-        expect(new_user_staked_data.amount).to.equal(1)
+        const new_user_staked = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        console.log('new_user_staked', new_user_staked)
+        expect(new_user_staked.nftAddress).to.equal(creation_nft.address)
+        expect(new_user_staked.tokenId).to.equal(tokenId)
+        expect(new_user_staked.amount).to.equal(1)
 
         // burn
         tx = await nft_battle_pool_v2.burnNFT(admin_wallet.address, creation_nft.address, tokenId, getTransactionOptions())
@@ -259,9 +256,9 @@ describe("NFTBattle.sol testing", function () {
         receipt = await tx.wait()
         console.log('nft_battle_pool_v2.burnNFT() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_user_staked_data2 = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
-        console.log('new_user_staked_data2', new_user_staked_data2)
-        expect(new_user_staked_data2.amount).to.equal(0)
+        const new_user_staked2 = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(admin_wallet.address, creation_nft.address, tokenId))
+        console.log('new_user_staked2', new_user_staked2)
+        expect(new_user_staked2.amount).to.equal(0)
 
         const new_owner = await creation_nft.ownerOf(tokenId)
         console.log('new_owner', new_owner)

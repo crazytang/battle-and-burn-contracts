@@ -1,14 +1,14 @@
-// deployed_index: 106
-// deployed_at: 2023/08/27 16:27:47
+// deployed_index: 113
+// deployed_at: 2023/08/28 22:41:53
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattleV2_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
     contract_name: 'NFTBattleV2',
-    address: '0x5e33d70C664beF889A42891460598d1c9eEB17cA',
-    proxy_address: '0x5e33d70C664beF889A42891460598d1c9eEB17cA',
-    target_address: '0xF8783cBCd8a14Eb5E04970832C5A44F393A20223',
+    address: '0x12c9aA75E4b2c15079CBC38738e087Ea203EEe56',
+    proxy_address: '0x12c9aA75E4b2c15079CBC38738e087Ea203EEe56',
+    target_address: '0xF9a1988541c9547B040b8aBC768d73624702cC61',
     libraries: [],
     abi:  [
     {
@@ -983,36 +983,6 @@ const NFTBattleV2_data: ProxyContractData = {
         {
           "components": [
             {
-              "internalType": "bytes32",
-              "name": "matchId",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "matchStartTime",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "matchEndTime",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "voteCount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "voteArenaCount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "voteChallengeCount",
-              "type": "uint256"
-            },
-            {
               "internalType": "address",
               "name": "arenaOwner",
               "type": "address"
@@ -1021,11 +991,6 @@ const NFTBattleV2_data: ProxyContractData = {
               "internalType": "address",
               "name": "arenaNFT",
               "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "arenaTokenId",
-              "type": "uint256"
             },
             {
               "internalType": "address",
@@ -1038,24 +1003,39 @@ const NFTBattleV2_data: ProxyContractData = {
               "type": "address"
             },
             {
+              "internalType": "address",
+              "name": "winner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "voteArenaCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "voteChallengeCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "arenaTokenId",
+              "type": "uint256"
+            },
+            {
               "internalType": "uint256",
               "name": "challengeTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "determinedAt",
               "type": "uint256"
             },
             {
               "internalType": "bytes32",
               "name": "merkleTreeRoot",
               "type": "bytes32"
-            },
-            {
-              "internalType": "enum MatchStructsV2.Winner",
-              "name": "winner",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint256",
-              "name": "determinedAt",
-              "type": "uint256"
             }
           ],
           "internalType": "struct MatchStructsV2.MatchData",

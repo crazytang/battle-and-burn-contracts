@@ -1,14 +1,14 @@
-// deployed_index: 41
-// deployed_at: 2023/08/27 17:07:52
+// deployed_index: 46
+// deployed_at: 2023/08/28 21:09:10
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattlePoolV2_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
     contract_name: 'NFTBattlePoolV2',
-    address: '0x5217a9F6B368Eed254F7b31b55aCC3e488ba7A9B',
-    proxy_address: '0x5217a9F6B368Eed254F7b31b55aCC3e488ba7A9B',
-    target_address: '0x24B2e82554FD0f66BDaB7D650088103f3ed44857',
+    address: '0x3996Ecb508dBe5b78b8d41CD1745cf91cFAfD36d',
+    proxy_address: '0x3996Ecb508dBe5b78b8d41CD1745cf91cFAfD36d',
+    target_address: '0x51Ba06D7850EfEa7a84c1491221b6cea581F770B',
     libraries: [],
     abi:  [
     {
@@ -380,7 +380,20 @@ const NFTBattlePoolV2_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_user",
+          "name": "_nft_battle_address",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_user_address",
           "type": "address"
         },
         {
@@ -394,49 +407,12 @@ const NFTBattlePoolV2_data: ProxyContractData = {
           "type": "uint256"
         }
       ],
-      "name": "getUserStakedData",
+      "name": "isFrozenNFT",
       "outputs": [
         {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "userAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "nftAddress",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "tokenId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "stakedAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isFrozen",
-              "type": "bool"
-            },
-            {
-              "internalType": "address",
-              "name": "beneficiaryAddress",
-              "type": "address"
-            }
-          ],
-          "internalType": "struct UserStakeStructs.BattlePoolUserStakedData",
+          "internalType": "bool",
           "name": "",
-          "type": "tuple"
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -446,13 +422,29 @@ const NFTBattlePoolV2_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_nft_battle_address",
+          "name": "_user_address",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
         }
       ],
-      "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
+      "name": "isStakedNFT",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -648,7 +640,7 @@ const NFTBattlePoolV2_data: ProxyContractData = {
               "type": "bytes32"
             }
           ],
-          "internalType": "struct UserStakeStructs.ApprovalData",
+          "internalType": "struct UserStakeStructsV2.ApprovalData",
           "name": "_approve_data",
           "type": "tuple"
         }

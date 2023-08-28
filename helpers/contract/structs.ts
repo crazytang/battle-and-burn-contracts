@@ -129,6 +129,39 @@ export const fetchToMatchData = (data: any): MatchData => {
         determinedAt: bnToNoPrecisionNumber(data['determinedAt'])
     }
 }
+
+export interface MatchDataV2 {
+    voteCount: number
+    voteArenaCount: number
+    voteChallengeCount: number
+    arenaOwner: string
+    arenaNFT: string
+    arenaTokenId: number
+    challengeOwner: string
+    challengeNFT: string
+    challengeTokenId: number
+    merkleTreeRoot: string
+    winner: string
+    determinedAt: number
+}
+
+
+export const fetchToMatchDataV2 = (data: any): MatchDataV2 => {
+    return {
+        voteCount: bnToNoPrecisionNumber(data['voteCount']),
+        voteArenaCount: bnToNoPrecisionNumber(data['voteArenaCount']),
+        voteChallengeCount: bnToNoPrecisionNumber(data['voteChallengeCount']),
+        arenaOwner: data['arenaOwner'],
+        arenaNFT: data['arenaNFT'],
+        arenaTokenId: bnToNoPrecisionNumber(data['arenaTokenId']),
+        challengeOwner: data['challengeOwner'],
+        challengeNFT: data['challengeNFT'],
+        challengeTokenId: bnToNoPrecisionNumber(data['challengeTokenId']),
+        merkleTreeRoot: data['merkleTreeRoot'],
+        winner: data['winner'],
+        determinedAt: bnToNoPrecisionNumber(data['determinedAt'])
+    }
+}
 export interface MatchDataParam {
     matchId: string
     matchListTime: number

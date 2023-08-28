@@ -36,7 +36,7 @@ import {IpfsService} from "../../libs/ipfs-service";
 import DistributionPolicyV1_data from "../../contract-data/DistributionPolicyV1-data";
 import {
     ApprovalData,
-    fetchToMatchData,
+    fetchToMatchData, fetchToMatchDataV2,
     fetchToNFTData,
     MatchData,
     MatchDataParam,
@@ -101,13 +101,15 @@ describe("NFTBattle.sol testing", function () {
 
         expect(match_data_param.voteArenaCount != match_data_param.voteChallengeCount).to.equal(true)
 
-        let winner_nft, winner_token_id, loser_nft, loser_token_id
+        let winner_nft, winner_token_id, loser_nft, loser_token_id, winner_address
         if (match_data_param.voteArenaCount > match_data_param.voteChallengeCount) {
+            winner_address = match_data_param.arenaOwner
             winner_nft = match_data_param.arenaNFT
             winner_token_id = match_data_param.arenaTokenId
             loser_nft = match_data_param.challengeNFT
             loser_token_id = match_data_param.challengeTokenId
         } else {
+            winner_address = match_data_param.challengeOwner
             winner_nft = match_data_param.challengeNFT
             winner_token_id = match_data_param.challengeTokenId
             loser_nft = match_data_param.arenaNFT
@@ -125,16 +127,16 @@ describe("NFTBattle.sol testing", function () {
 
         await sleep(10000) // wait for 10 seconds
         // to redeem nft or not
-        const redeem_nft = true
+        const redeem_nft = false
         tx = await nft_battle_v2.determine(match_data_param, redeem_nft, getTransactionOptions())
         console.log('nft_battle_v2.determine() tx', tx.hash)
         receipt = await tx.wait()
         console.log('nft_battle_v2.determine() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // verify data
-        const match_data_in_contract = fetchToMatchData(await nft_battle_v2.getMatchData(match_data_param.matchId))
+        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
         console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.matchId).to.equal(match_data_param.matchId)
+        expect(match_data_in_contract.winner).to.equal(winner_address)
         expect(match_data_in_contract.determinedAt).greaterThan(0)
 
         if (match_data_param.challengeNFT != ethers.constants.AddressZero) {
@@ -185,11 +187,9 @@ describe("NFTBattle.sol testing", function () {
             loser_token_id = match_data_param.arenaTokenId
         }
 
-        const old_winner_user_staked_data: NFTData = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(winner.address, winner_nft, winner_token_id))
-        console.log('old_winner_user_staked_data', old_winner_user_staked_data)
-        expect(old_winner_user_staked_data.amount).to.equal(1)
-        expect(old_winner_user_staked_data.isFrozen).to.equal(false)
-        expect(old_winner_user_staked_data.beneficiaryAddress).to.equal(ethers.constants.AddressZero)
+        const old_winner_user_staked = await nft_battle_pool_v2.isStakedNFT(winner.address, winner_nft, winner_token_id)
+        console.log('old_winner_user_staked', old_winner_user_staked)
+        expect(old_winner_user_staked).to.true
 
         // 5) 由系统决定胜负，冻结胜利者的NFT
         await sleep(10000) // wait for 10 seconds
@@ -199,11 +199,13 @@ describe("NFTBattle.sol testing", function () {
         receipt = await tx.wait()
         console.log('nft_battle_v2.determineBySys() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_winner_user_staked_data: NFTData = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(winner.address, winner_nft, winner_token_id))
-        console.log('new_winner_user_staked_data', new_winner_user_staked_data)
-        expect(new_winner_user_staked_data.amount).to.equal(1)
-        expect(new_winner_user_staked_data.isFrozen).to.equal(true)
-        expect(new_winner_user_staked_data.beneficiaryAddress).to.equal(admin_wallet.address)
+        const new_winner_user_staked = await nft_battle_pool_v2.isStakedNFT(winner.address, winner_nft, winner_token_id)
+        console.log('new_winner_user_staked', new_winner_user_staked)
+        expect(new_winner_user_staked).to.true
+
+        const new_winner_user_nft_frozen = await nft_battle_pool_v2.isFrozenNFT(winner.address, winner_nft, winner_token_id)
+        console.log('new_winner_user_nft_frozen', new_winner_user_nft_frozen)
+        expect(new_winner_user_nft_frozen).to.true
 
         // 6) 解冻胜利者的NFT
         // 冻结的NFT不可以赎回
@@ -228,7 +230,7 @@ describe("NFTBattle.sol testing", function () {
         }
 
         const tx_data = {...getTransactionOptions(), value: numberToBn(eth_amount)}
-        const nft_redeem = true
+        const nft_redeem = false
 
         const old_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
         console.log('old_admin_eth_balance', old_admin_eth_balance)
@@ -238,19 +240,21 @@ describe("NFTBattle.sol testing", function () {
         receipt = await tx.wait()
         console.log('nft_battle_pool_v2.unfreezeNFT() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_winner_user_staked_data2: NFTData = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(winner.address, winner_nft, winner_token_id))
-        console.log('new_winner_user_staked_data2', new_winner_user_staked_data2)
+        const new_winner_user_staked2 = await nft_battle_pool_v2.isStakedNFT(winner.address, winner_nft, winner_token_id)
+        console.log('new_winner_user_staked2', new_winner_user_staked2)
+
         if (nft_redeem) {
-            expect(new_winner_user_staked_data2.amount).to.equal(0)
+            expect(new_winner_user_staked2).be.false
 
             const winner_nft_contract = CreationNFT__factory.connect(winner_nft, winner)
             const winner_nft_owner = await winner_nft_contract.ownerOf(winner_token_id)
             console.log('winner_nft_owner', winner_nft_owner)
             expect(winner_nft_owner).to.equal(winner.address)
         } else {
-            expect(new_winner_user_staked_data2.amount).to.equal(1)
-            expect(new_winner_user_staked_data2.isFrozen).to.equal(false)
-            expect(new_winner_user_staked_data2.beneficiaryAddress).to.equal(ethers.constants.AddressZero)
+            expect(new_winner_user_staked2).be.true
+            const new_winner_user_nft_frozen2 = await nft_battle_pool_v2.isFrozenNFT(winner.address, winner_nft, winner_token_id)
+            console.log('new_winner_user_nft_frozen2', new_winner_user_nft_frozen2)
+            expect(new_winner_user_nft_frozen2).to.false
         }
 
         const new_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
@@ -259,7 +263,7 @@ describe("NFTBattle.sol testing", function () {
 
     })
 
-    it('test determineIncludeJPG()', async () => {
+    it.skip('test determineIncludeJPG()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const user1_jpg_ipfs = 'ipfs://QmbSHDFknsZGNk8N9LeRDpuRADAm5bvcxG6Sfrsa1tc9qiA'
@@ -304,7 +308,7 @@ describe("NFTBattle.sol testing", function () {
         }
 
         // to redeem nft or not
-        const redeem_nft = false
+        const redeem_nft = true
 
         await sleep(10000) // wait for 10 seconds
 
@@ -314,10 +318,10 @@ describe("NFTBattle.sol testing", function () {
         console.log('nft_battle_v2.determineIncludeJPG() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // verify data
-        const match_data_in_contract = fetchToMatchData(await nft_battle_v2.getMatchData(match_data_param.matchId))
+        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
         console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.matchId).to.equal(match_data_param.matchId)
         expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
+        expect(match_data_in_contract.winner).to.equal(winner.address)
         expect(match_data_in_contract.determinedAt).greaterThan(0)
 
         if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
@@ -356,7 +360,7 @@ describe("NFTBattle.sol testing", function () {
 
     })
 
-    it.skip('test determineIncludeJPGBySys()', async () => {
+    it('test determineIncludeJPGBySys()', async () => {
         const user1_nft_owner = user1_wallet.address
         const user2_nft_owner = user2_wallet.address
         const user1_jpg_ipfs = 'ipfs://QmbSHDFknsZGNk8N9LeRDpuRADAm5bvcxG6Sfrsa1tc9qiA'
@@ -409,10 +413,10 @@ describe("NFTBattle.sol testing", function () {
         console.log('nft_battle_v2.determineIncludeJPGBySys() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // verify data
-        const match_data_in_contract = fetchToMatchData(await nft_battle_v2.getMatchData(match_data_param.matchId))
+        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
         console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.matchId).to.equal(match_data_param.matchId)
         expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
+        expect(match_data_in_contract.winner).equal(winner.address)
         expect(match_data_in_contract.determinedAt).greaterThan(0)
 
         if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
@@ -437,6 +441,10 @@ describe("NFTBattle.sol testing", function () {
         const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
         expect(new_winner_ko_score).to.equal(loser_ko_score + 1)
+
+        const winner_nft_frozen_before = await nft_battle_pool_v2.isFrozenNFT(winner.address, winner_nft, winner_token_id)
+        console.log('winner_nft_frozen_before', winner_nft_frozen_before)
+        expect(winner_nft_frozen_before).to.true
 
         // 冻结的NFT不可以赎回
         const winner_nft_battle_pool = NFTBattlePoolV2__factory.connect(NFTBattlePoolV2_data.address, winner)
@@ -464,19 +472,24 @@ describe("NFTBattle.sol testing", function () {
         receipt = await tx.wait()
         console.log('winner_nft_battle_pool.unfreezeNFT() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const new_winner_user_staked_data2: NFTData = fetchToNFTData(await nft_battle_pool_v2.getUserStakedData(winner.address, winner_nft, winner_token_id))
-        console.log('new_winner_user_staked_data2', new_winner_user_staked_data2)
+        const new_winner_user_staked2 = await nft_battle_pool_v2.isStakedNFT(winner.address, winner_nft, winner_token_id)
+        console.log('new_winner_user_staked2', new_winner_user_staked2)
         if (redeem_nft) {
-            expect(new_winner_user_staked_data2.amount).to.equal(0)
+            expect(new_winner_user_staked2).be.false
 
             const winner_nft_contract = CreationNFT__factory.connect(winner_nft, winner)
             const winner_nft_owner = await winner_nft_contract.ownerOf(winner_token_id)
             console.log('winner_nft_owner', winner_nft_owner)
             expect(winner_nft_owner).to.equal(winner.address)
         } else {
-            expect(new_winner_user_staked_data2.amount).to.equal(1)
-            expect(new_winner_user_staked_data2.isFrozen).to.equal(false)
-            expect(new_winner_user_staked_data2.beneficiaryAddress).to.equal(ethers.constants.AddressZero)
+            expect(new_winner_user_staked2).be.true
+            const winner_nft_frozen_after = await nft_battle_pool_v2.isFrozenNFT(winner.address, winner_nft, winner_token_id)
+            console.log('winner_nft_frozen_after', winner_nft_frozen_after)
+            expect(winner_nft_frozen_after).to.false
+
+            const new_winner_nft_owner_in_pool = await nft_battle_pool_v2.getNFTOwner(match_data_in_contract.arenaNFT, match_data_in_contract.arenaTokenId)
+            console.log('new_winner_nft_owner_in_pool', new_winner_nft_owner_in_pool)
+            expect(new_winner_nft_owner_in_pool).to.equal(winner.address)
         }
 
         const new_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
@@ -694,7 +707,7 @@ const makeMatchDataParam = async (user1_wallet:Wallet, user2_wallet:Wallet, aren
     match_data_param.merkleTreeRoot = merkle_tree_service.getRoot()
 
     // 管理员对merkle tree root进行签名
-    const match_data_admin_hash = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.merkleTreeRoot])
+    const match_data_admin_hash = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes', 'bytes', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.arenaOwnerSignature, match_data_param.challengeOwnerSignature,  match_data_param.merkleTreeRoot])
     match_data_param.extraSignature = signMessageByWallet(admin_wallet, match_data_admin_hash)
 
     // 第二个人投票
@@ -742,7 +755,7 @@ const makeMatchDataParam = async (user1_wallet:Wallet, user2_wallet:Wallet, aren
     match_data_param.merkleTreeURI = ipfs_file
     match_data_param.merkleTreeRoot = merkle_tree_service.getRoot()
     // 管理员对merkle tree root进行签名
-    const match_data_admin_hash2 = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.merkleTreeRoot])
+    const match_data_admin_hash2 = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes', 'bytes', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.arenaOwnerSignature, match_data_param.challengeOwnerSignature, match_data_param.merkleTreeRoot])
     match_data_param.extraSignature = signMessageByWallet(admin_wallet, match_data_admin_hash2)
 
     // 第三个人投票
@@ -787,7 +800,7 @@ const makeMatchDataParam = async (user1_wallet:Wallet, user2_wallet:Wallet, aren
     match_data_param.merkleTreeURI = ipfs_file
     match_data_param.merkleTreeRoot = merkle_tree_service.getRoot()
     // 管理员对merkle tree root进行签名
-    const match_data_admin_hash3 = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.merkleTreeRoot])
+    const match_data_admin_hash3 = solidityAbiEncodeAndKeccak256(['bytes32', 'uint256', 'uint256', 'bytes', 'bytes', 'bytes32'], [match_data_param.matchId, match_data_param.voteArenaCount, match_data_param.voteChallengeCount, match_data_param.arenaOwnerSignature, match_data_param.challengeOwnerSignature, match_data_param.merkleTreeRoot])
     match_data_param.extraSignature = signMessageByWallet(admin_wallet, match_data_admin_hash3)
 
     console.log('match_data_param', match_data_param)

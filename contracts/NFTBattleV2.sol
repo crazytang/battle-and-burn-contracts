@@ -1,5 +1,5 @@
-// ##deployed index: 106
-// ##deployed at: 2023/08/27 16:27:47
+// ##deployed index: 113
+// ##deployed at: 2023/08/28 22:41:53
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -245,7 +245,7 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
 
         _checkMatchData(_match_data_param);
 
-        _checkExtraSignature(_match_data_param.matchId, _match_data_param.voteArenaCount, _match_data_param.voteChallengeCount, _match_data_param.merkleTreeRoot, _match_data_param.extraSignature);
+        _checkExtraSignature(_match_data_param.matchId, _match_data_param.voteArenaCount, _match_data_param.voteChallengeCount, _match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.merkleTreeRoot, _match_data_param.extraSignature);
 
         DetermineVars memory _vars;
 
@@ -269,10 +269,10 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         // burn loser's nft
         nft_battle_pool_v2.burnNFT(_vars.loser_address, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
-        _updateMatchData(_match_data_param, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
+        _updateMatchData(_match_data_param, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
         emit Determined(_match_data_param.matchId, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
-        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
+//        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
 
         // 由系统执行的时候，需要冻结赢家的NFT
         if (_executor != address(0)) {
@@ -312,7 +312,7 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
 
         _checkMatchData(_match_data_param);
 
-        _checkExtraSignature(_match_data_param.matchId, _match_data_param.voteArenaCount, _match_data_param.voteChallengeCount, _match_data_param.merkleTreeRoot, _match_data_param.extraSignature);
+        _checkExtraSignature(_match_data_param.matchId, _match_data_param.voteArenaCount, _match_data_param.voteChallengeCount, _match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.merkleTreeRoot, _match_data_param.extraSignature);
 
         DetermineIncludeJPGVars memory _vars;
         bool _arena_win = _match_data_param.voteArenaCount > _match_data_param.voteChallengeCount;
@@ -376,10 +376,10 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
             nft_battle_pool_v2.burnNFT(_vars.loser_address, _vars.loser_nft_address, _vars.loser_nft_token_id);
         }
 
-        _updateMatchData(_match_data_param, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
+        _updateMatchData(_match_data_param, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
         emit DeterminedIncludeJPG(_match_data_param.matchId, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.winner_jpg, _vars.loser_nft_address, _vars.loser_nft_token_id, _vars.loser_jpg, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
-        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
+//        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
 
         // 由系统执行的时候，需要冻结赢家的NFT
         if (_executor != address(0)) {
@@ -391,7 +391,6 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
 
     function _checkMatchData(MatchStructsV2.MatchDataParam calldata _match_data_param) private view returns (bool) {
         require(_match_data_param.matchId.length > 0, "NFTBattle: match_id is empty");
-//        require(_match_data_param.matchListTime <= _match_data_param.matchStartTime, "NFTBattle: matchListTime is greater than matchStartTime");
         require(_match_data_param.matchStartTime < _match_data_param.matchEndTime, "NFTBattle: matchStartTime is greater than matchEndTime");
         require(_match_data_param.matchEndTime <= block.timestamp, "NFTBattle: matchEndTime is less than current time");
         require(_match_data_param.voteCount >= minimum_vote_amount, "NFTBattle: voteCount is less than minimum_vote_amount");
@@ -405,19 +404,32 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         return true;
     }
 
-    function _checkExtraSignature(bytes32 _match_id, uint256 _vote_arena_count, uint256 _vote_challenge_count, bytes32 _merkle_root, bytes calldata _extra_signature) private view returns (bool) {
-        bytes32 _hash = keccak256(bytes.concat(keccak256(abi.encode(_match_id, _vote_arena_count, _vote_challenge_count, _merkle_root))));
+    function _checkExtraSignature(bytes32 _match_id, uint256 _vote_arena_count, uint256 _vote_challenge_count, bytes calldata _arena_signature, bytes calldata _challenge_signature, bytes32 _merkle_root, bytes calldata _extra_signature) private view returns (bool) {
+        bytes32 _hash = keccak256(bytes.concat(keccak256(abi.encode(_match_id, _vote_arena_count, _vote_challenge_count, _arena_signature, _challenge_signature, _merkle_root))));
         return _hash.recover(_extra_signature) == verifier_address;
     }
 
-    function _updateMatchData(MatchStructsV2.MatchDataParam calldata _match_data_param, address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {
+    function _updateMatchData(MatchStructsV2.MatchDataParam calldata _match_data_param, address _winner_address, address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {
         // update matches result data
         bytes32 _match_id = _match_data_param.matchId;
-        matches[_match_id].matchId = _match_id;
-        matches[_match_id].matchStartTime = _match_data_param.matchStartTime;
-        matches[_match_id].matchEndTime = _match_data_param.matchEndTime;
-        matches[_match_id].voteCount = _match_data_param.voteCount;
-        matches[_match_id].voteArenaCount = _match_data_param.voteArenaCount;
+        matches[_match_id] = MatchStructsV2.MatchData({
+            arenaOwner: _match_data_param.arenaOwner,
+            arenaNFT: _match_data_param.arenaNFT,
+            challengeOwner: _match_data_param.challengeOwner,
+            challengeNFT: _match_data_param.challengeNFT,
+            winner: _winner_address,
+            voteArenaCount: _match_data_param.voteArenaCount,
+            voteChallengeCount: _match_data_param.voteChallengeCount,
+            arenaTokenId: _match_data_param.arenaTokenId,
+            challengeTokenId: _match_data_param.challengeTokenId,
+            determinedAt: block.timestamp,
+            merkleTreeRoot: _match_data_param.merkleTreeRoot
+        });
+//        matches[_match_id].matchId = _match_id;
+//        matches[_match_id].matchStartTime = _match_data_param.matchStartTime;
+//        matches[_match_id].matchEndTime = _match_data_param.matchEndTime;
+//        matches[_match_id].voteCount = _match_data_param.voteCount;
+/*        matches[_match_id].voteArenaCount = _match_data_param.voteArenaCount;
         matches[_match_id].voteChallengeCount = _match_data_param.voteChallengeCount;
         matches[_match_id].arenaOwner = _match_data_param.arenaOwner;
         matches[_match_id].arenaNFT = _match_data_param.arenaNFT;
@@ -426,8 +438,8 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         matches[_match_id].challengeNFT = _match_data_param.challengeNFT;
         matches[_match_id].challengeTokenId = _match_data_param.challengeTokenId;
         matches[_match_id].merkleTreeRoot = _match_data_param.merkleTreeRoot;
-        matches[_match_id].winner = _winner_nft_address == _match_data_param.arenaNFT ? MatchStructsV2.Winner.Arena : MatchStructsV2.Winner.Challenge;
-        matches[_match_id].determinedAt = block.timestamp;
+        matches[_match_id].winner = _winner_nft_address == _match_data_param.arenaNFT ? _match_data_param.arenaOwner : _match_data_param.challengeOwner;
+        matches[_match_id].determinedAt = block.timestamp;*/
 
         // After JPG to NFT, we need to update the new NFT address and tokenId to match_data
         if (_match_data_param.voteArenaCount > _match_data_param.voteChallengeCount) {

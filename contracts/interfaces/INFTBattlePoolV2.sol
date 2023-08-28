@@ -40,9 +40,11 @@ interface INFTBattlePoolV2 {
 
     function unfreezeNFT(address _nft_address, uint256 _tokenId, bool _nft_redeem) external payable;
 
-    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view returns (UserStakeStructsV2.BattlePoolUserStakedData memory);
-
     function userNFTIsAvailable(address _user, address _nft_address, uint256 _tokenId) external view returns (bool);
+
+    function isStakedNFT(address _user_address, address _nft_address, uint256 _tokenId) external view  returns (bool);
+
+    function isFrozenNFT(address _user_address, address _nft_address, uint256 _tokenId) external view returns (bool);
 
     function getNFTOwner(address _nft_address, uint256 _tokenId) external view returns (address);
 }

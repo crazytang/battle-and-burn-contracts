@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import "../dependencies/Address.sol";
+
 library MatchStructsV2 {
 
     // 比赛数据
@@ -34,11 +36,26 @@ library MatchStructsV2 {
 
     // 比赛数据
     struct MatchData {
-        bytes32 matchId; // 比赛ID
-        uint256 matchStartTime; // 比赛开始时间
-        uint256 matchEndTime; // 比赛结束时间
+        address arenaOwner;
+        address arenaNFT;
+        address challengeOwner;
+        address challengeNFT;
+        address winner;
 
-        uint256 voteCount; // 投票数量
+        uint256 voteArenaCount;
+        uint256 voteChallengeCount;
+        uint256 arenaTokenId;
+        uint256 challengeTokenId;
+        uint256 determinedAt;
+
+        bytes32 merkleTreeRoot;
+    }
+/*    struct MatchData {
+//        bytes32 matchId; // 比赛ID
+//        uint256 matchStartTime; // 比赛开始时间
+//        uint256 matchEndTime; // 比赛结束时间
+//
+//        uint256 voteCount; // 投票数量
         uint256 voteArenaCount; // 投票摆擂台数量
         uint256 voteChallengeCount; // 投票挑战者数量
 
@@ -54,11 +71,11 @@ library MatchStructsV2 {
 
         bytes32 merkleTreeRoot; // 投票结果MerkleTree的根节点
 
-        Winner winner; // 胜利者
+        address winner; // 胜利者
 //        bytes extraSignature;
 //        uint256 burnedAt; // 比赛结束后，烧毁NFT的时间
         uint256 determinedAt; // 比赛结束时间
-    }
+    }*/
 
     // 投票数据
 /*    struct VoteData {

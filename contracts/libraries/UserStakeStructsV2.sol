@@ -11,6 +11,11 @@ library UserStakeStructsV2 {
         address beneficiaryAddress;
     }
 
+    struct BattlePoolUserNFTFrozenData {
+        bool isFrozen;
+        address beneficiaryAddress;
+    }
+
     struct UserNFTStakedData {
         address nftAddress;
         uint256 tokenId;
