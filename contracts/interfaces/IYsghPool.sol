@@ -3,13 +3,16 @@ pragma solidity ^0.8.0;
 
 
 interface IYsghPool {
+
+    function aggressive_bid_address() external view returns (address);
+
+    function setAggressiveBidAddress(address _aggressive_bid_address) external;
+
     function deposit() external payable;
-    //    function depositWETH(uint256 _amount) external;
+
+    function depositTo(address _to) external payable;
     function withdraw(uint256 _amount) external;
     function withdrawTo(address _to, uint256 _amount) external;
-    //    function withdrawWETH(uint256 _amount) external;
     function transferFrom(address _from, address _to, uint256 _amount) external;
-    //    function transferWETHFrom(address _from, address _to, uint256 _amount) external;
-
     function getUserBalance(address _user) external view returns (uint256);
 }

@@ -1,4 +1,4 @@
-import {BigNumber, ContractReceipt, ContractTransaction, ethers, Wallet} from "ethers";
+import { ContractReceipt, ContractTransaction, ethers, Wallet} from "ethers";
 import {contract_l2_provider_getter} from "../../helpers/providers/contract_provider_getter";
 import {get_admin_wallet} from "../../helpers/wallets/admin_wallet_getter";
 import {
@@ -10,26 +10,31 @@ import {
 import {
     amount_equal_in_precision,
     bnToNoPrecisionNumber,
-    bnToNumber, getGasUsedAndGasPriceFromReceipt, getGasUsedFromReceipt,
+    bnToNumber, getGasUsedAndGasPriceFromReceipt,
     getTransactionOptions,
     numberToBn,
-    setDefaultGasOptions, signMessageAndSplitByWallet, signMessageByWallet, sleep, solidityAbiEncode
+    setDefaultGasOptions, signMessageAndSplitByWallet, signMessageByWallet, solidityAbiEncode
 } from "../../helpers/contract/contract-utils";
 import {expect} from "chai";
 import {
-    deployCreationNFT,
     makeInputData,
     makeInputDataFromOrdersWithMerkleTree,
-    makeNewOrder
+    makeNewOrder, mintACreationNFT
 } from "../../helpers/mock-functions";
 import {
-    AggressiveBid,
-    AggressiveBid__factory,
-    AggressiveBidDistribution, AggressiveBidDistribution__factory,
-    AggressiveBidPool, AggressiveBidPool__factory, IYsghPool, IYsghPool__factory
+    AggressiveBidV2,
+    AggressiveBidV2__factory,
+    AggressiveBidDistribution,
+    AggressiveBidDistribution__factory,
+    AggressiveBidPoolV2,
+    AggressiveBidPoolV2__factory,
+    IYsghPool,
+    IYsghPool__factory,
+    CreationNFTV2,
+    CreationNFTV2__factory
 } from "../../typechain-types";
-import AggressiveBidPool_data from "../../contract-data/AggressiveBidPool-data";
-import AggressiveBid_data from "../../contract-data/AggressiveBid-data";
+import AggressiveBidPoolV2_data from "../../contract-data/AggressiveBidPoolV2-data";
+import AggressiveBidV2_data from "../../contract-data/AggressiveBidV2-data";
 import AggressiveBidDistribution_data from "../../contract-data/AggressiveBidDistribution-data";
 import {UserStakeStructs} from "../../typechain-types/NFTBattlePool";
 import ApprovalDataStruct = UserStakeStructs.ApprovalDataStruct;
@@ -38,16 +43,12 @@ import {keccak256} from "@ethersproject/keccak256";
 import {solidityKeccak256} from "ethers/lib/utils";
 import {
     AssetType,
-    fetchToBidPoolUserStakedData,
-    fetchToUserNFTStakedDataList,
     InputData,
     OrderSide,
     OrderType
 } from "../../helpers/contract/structs";
-import {exec} from "child_process";
 import YsghPool_data from "../../contract-data/YsghPool-data";
-import {AggressiveBidStructs} from "../../typechain-types/AggressiveBid";
-import OrderStruct = AggressiveBidStructs.OrderStruct;
+import CreationNFTV2_data from "../../contract-data/CreationNFTV2-data";
 
 
 let tx: ContractTransaction
@@ -59,58 +60,55 @@ const user1_wallet: Wallet = get_user_wallet_5712(provider)
 const user2_wallet: Wallet = get_user_wallet_e265(provider)
 const user3_wallet: Wallet = get_user_wallet_114a(provider)
 
-let aggressive_bid: AggressiveBid
-let aggressive_bid_pool: AggressiveBidPool
+let aggressive_bid_v2: AggressiveBidV2
+let aggressive_bid_pool_v2: AggressiveBidPoolV2
 let aggressive_bid_distribution: AggressiveBidDistribution
 let ysgh_pool: IYsghPool
+let creation_nft_v2: CreationNFTV2
 
 before(async function () {
     await setDefaultGasOptions(provider)
 
-    aggressive_bid = AggressiveBid__factory.connect(AggressiveBid_data.address, admin_wallet)
-    console.log('aggressive_bid.address', aggressive_bid.address)
+    aggressive_bid_v2 = AggressiveBidV2__factory.connect(AggressiveBidV2_data.address, admin_wallet)
+    console.log('aggressive_bid_v2.address', aggressive_bid_v2.address)
 
-    aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, admin_wallet)
-    console.log('aggressive_bid_pool.address', aggressive_bid_pool.address)
+    aggressive_bid_pool_v2 = AggressiveBidPoolV2__factory.connect(AggressiveBidPoolV2_data.address, admin_wallet)
+    console.log('aggressive_bid_pool_v2.address', aggressive_bid_pool_v2.address)
 
     aggressive_bid_distribution = AggressiveBidDistribution__factory.connect(AggressiveBidDistribution_data.address, admin_wallet)
     console.log('aggressive_bid_distribution.address', aggressive_bid_distribution.address)
 
     ysgh_pool = IYsghPool__factory.connect(YsghPool_data.address, admin_wallet)
     console.log('ysgh_pool.address', ysgh_pool.address)
+
+    creation_nft_v2 = CreationNFTV2__factory.connect(CreationNFTV2_data.address, admin_wallet)
+    console.log('creation_nft_v2.address', creation_nft_v2.address)
 })
 
 describe("Ysgh Market testing", function () {
     this.timeout(20 * 60 * 1000);
 
     it('base test', async () => {
-        const verifier_address = await aggressive_bid.verifier_address()
+        const verifier_address = await aggressive_bid_v2.verifier_address()
         console.log('verifier_address', verifier_address)
         expect(verifier_address).equal(admin_wallet.address)
 
-        const aggressive_bid_pool_address = await aggressive_bid.aggressive_bid_pool()
+        const aggressive_bid_pool_address = await aggressive_bid_v2.aggressive_bid_pool_v2()
         console.log('aggressive_bid_pool_address', aggressive_bid_pool_address)
-        expect(aggressive_bid_pool_address).equal(AggressiveBidPool_data.address)
+        expect(aggressive_bid_pool_address).equal(AggressiveBidPoolV2_data.address)
 
-        const aggressive_bid_distribution_address = await aggressive_bid.aggressive_bid_distribution()
+        const aggressive_bid_distribution_address = await aggressive_bid_v2.aggressive_bid_distribution()
         console.log('aggressive_bid_distribution_address', aggressive_bid_distribution_address)
         expect(aggressive_bid_distribution_address).equal(AggressiveBidDistribution_data.address)
 
-        const ysgh_pool_address = await aggressive_bid.ysgh_pool()
+        const ysgh_pool_address = await aggressive_bid_v2.ysgh_pool()
         console.log('ysgh_pool_address', ysgh_pool_address)
         expect(ysgh_pool_address).equal(YsghPool_data.address)
     })
 
 
     it('test ERC721 execute() with fixed price', async () => {
-        const user1_nft = await deployCreationNFT(user1_wallet, 'user1_nft', 'user1_nft', 'ipfs://', {
-            original_element_creator: ethers.constants.AddressZero,
-            element_creators: [],
-            element_quote_element_creators: []
-        });
-        console.log('user1_nft.address', user1_nft.address)
-
-        const sell_token_id = 0
+        const sell_token_id = await mintACreationNFT(user1_wallet)
         console.log('sell_token_id', sell_token_id)
 
         const sell_token_amount = 1
@@ -120,9 +118,9 @@ describe("Ysgh Market testing", function () {
         const method_name_hash = solidityKeccak256(['string'], ['Permit(address owner,address spender,uint256 tokenId,uint256 nonce,uint256 deadline)'])
 
         const user1_nft_owner_before = user1_wallet.address
-        const spender = aggressive_bid_pool.address
+        const spender = aggressive_bid_pool_v2.address
         const user1_nft_token_id = sell_token_id
-        const nonce = await user1_nft.nonces(user1_wallet.address)
+        const nonce = await creation_nft_v2.nonces(user1_wallet.address)
         const deadline = nowTimestamp() + 60;
 
         const user1_hash = keccak256(solidityAbiEncode(['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'], [method_name_hash, user1_nft_owner_before, spender, user1_nft_token_id, nonce, deadline]))
@@ -142,20 +140,21 @@ describe("Ysgh Market testing", function () {
             v: v
         }
 
-        const user1_aggressive_bid_pool = AggressiveBidPool__factory.connect(AggressiveBidPool_data.address, user1_wallet)
-        tx = await user1_aggressive_bid_pool.stakeNFT(user1_nft.address, user1_approval_data, getTransactionOptions())
+        const user1_aggressive_bid_pool = AggressiveBidPoolV2__factory.connect(AggressiveBidPoolV2_data.address, user1_wallet)
+        tx = await user1_aggressive_bid_pool.stakeNFT(creation_nft_v2.address, user1_approval_data, getTransactionOptions())
         console.log('user1_aggressive_bid_pool.stakeNFT() tx hash', tx.hash)
         receipt = await tx.wait()
         console.log('user1_aggressive_bid_pool.stakeNFT() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
-        const user1_nft_staked_data_list_before = fetchToUserNFTStakedDataList(await user1_aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
-        console.log('user1_nft_staked_data_list_before', user1_nft_staked_data_list_before)
-        const cc = user1_nft_staked_data_list_before.length
-        expect(user1_nft_staked_data_list_before[cc-1].nftAddress).equal(user1_nft.address)
-        expect(user1_nft_staked_data_list_before[cc-1].tokenId).equal(user1_nft_token_id)
-        expect(user1_nft_staked_data_list_before[cc-1].amount).equal(1)
+        const user1_staked_before = await user1_aggressive_bid_pool.isStakedNFT(user1_wallet.address, creation_nft_v2.address, user1_nft_token_id)
+        console.log('user1_staked_before', user1_staked_before)
+        expect(user1_staked_before).be.true
+        
+        const user2_staked_before = await user1_aggressive_bid_pool.isStakedNFT(user2_wallet.address, creation_nft_v2.address, user1_nft_token_id)
+        console.log('user2_staked_before', user2_staked_before)
+        expect(user2_staked_before).be.false
 
-        const user1_nft_owner_in_aggressive_bid_pool_before = await user1_aggressive_bid_pool.getNFTOwner(user1_nft.address, user1_nft_token_id)
+        const user1_nft_owner_in_aggressive_bid_pool_before = await user1_aggressive_bid_pool.getNFTOwner(creation_nft_v2.address, user1_nft_token_id)
         console.log('user1_nft_owner_in_aggressive_bid_pool_before', user1_nft_owner_in_aggressive_bid_pool_before)
         expect(user1_nft_owner_in_aggressive_bid_pool_before).equal(user1_nft_owner_before)
 
@@ -201,7 +200,7 @@ describe("Ysgh Market testing", function () {
 
         // 3) 生成一口价订单
         console.log('生成一口价订单')
-        const sell_nonce = bnToNoPrecisionNumber(await aggressive_bid.nonces(user1_wallet.address))
+        const sell_nonce = bnToNoPrecisionNumber(await aggressive_bid_v2.nonces(user1_wallet.address))
         const sell_price = 0.01
         console.log('sell_price', sell_price)
 
@@ -209,7 +208,7 @@ describe("Ysgh Market testing", function () {
             user1_wallet.address,
             OrderSide.SELL,
             OrderType.FixedPrice,
-            user1_nft.address,
+            creation_nft_v2.address,
             AssetType.ERC721,
             sell_token_id,
             sell_token_amount,
@@ -219,12 +218,12 @@ describe("Ysgh Market testing", function () {
 
         const sell_input_data: InputData = await makeInputDataFromOrdersWithMerkleTree(sell_order, [sell_order], user1_wallet, admin_wallet)
 
-        const buy_nonce = bnToNoPrecisionNumber(await aggressive_bid.nonces(user2_wallet.address))
+        const buy_nonce = bnToNoPrecisionNumber(await aggressive_bid_v2.nonces(user2_wallet.address))
         const buy_order = makeNewOrder(
             user2_wallet.address,
             OrderSide.BUY,
             OrderType.FixedPrice,
-            user1_nft.address,
+            creation_nft_v2.address,
             AssetType.ERC721,
             sell_token_id,
             sell_token_amount,
@@ -239,7 +238,7 @@ describe("Ysgh Market testing", function () {
 
         if (user2_eth_balance_in_ysgh_pool_before < total_price) {
             console.log('dfdsfsdfsd', user2_eth_balance_in_ysgh_pool_before , total_price)
-            throw new Error('user2_staked_data_list_before.balance < total_price')
+            throw new Error('user2_staked_before.balance < total_price')
         }
 
         const eth_balance_in_distribution_contract_before = bnToNumber(await provider.getBalance(aggressive_bid_distribution.address))
@@ -248,16 +247,7 @@ describe("Ysgh Market testing", function () {
         console.log('sell_input_data', sell_input_data)
         console.log('buy_input_data', buy_input_data)
 
-        await sleep(10000)
-        const user2_aggressive_bid = AggressiveBid__factory.connect(AggressiveBid_data.address, user2_wallet)
-/*
-        const rs = await user2_aggressive_bid.checkInput(sell_input_data)
-        // console.log('rs', rs)
-        expect(rs).equal(true)
-        const rs2 = await user2_aggressive_bid.checkInput(buy_input_data)
-        // console.log('rs2', rs2)
-        expect(rs2).equal(true)
-*/
+        const user2_aggressive_bid = AggressiveBidV2__factory.connect(AggressiveBidV2_data.address, user2_wallet)
 
         tx = await user2_aggressive_bid.execute(sell_input_data, buy_input_data, getTransactionOptions())
         console.log('user2_aggressive_bid.execute() tx hash', tx.hash)
@@ -278,38 +268,19 @@ describe("Ysgh Market testing", function () {
         expect(amount_equal_in_precision(user1_eth_balance_in_ysgh_pool_after, user1_eth_balance_in_ysgh_pool_before + receive_amount)).be.true
 
 
-        const user1_staked_data_list_after = fetchToUserNFTStakedDataList(await user1_aggressive_bid_pool.getUserNFTStakedDataList(user1_wallet.address))
-        console.log('user1_staked_data_list_after', user1_staked_data_list_after)
-        expect(user1_staked_data_list_after.length).equal(user1_nft_staked_data_list_before.length - 1)
-
-        let user1_has_nft = false
-        for (let i = 0; i < user1_staked_data_list_after.length; i++) {
-            const nftStakedData = user1_staked_data_list_after[i]
-            if (nftStakedData.userAddress == user1_wallet.address && nftStakedData.nftAddress == user1_nft.address &&  nftStakedData.tokenId === sell_token_id && nftStakedData.amount > 0) {
-                user1_has_nft = true
-                break
-            }
-        }
-        expect(user1_has_nft).equal(false)
+        const user1_staked_after = await user1_aggressive_bid_pool.isStakedNFT(user1_wallet.address, creation_nft_v2.address, user1_nft_token_id)
+        console.log('user1_staked_after', user1_staked_after)
+        expect(user1_staked_after).be.false
 
         const user2_eth_balance_in_ysgh_pool_after = bnToNumber(await ysgh_pool.getUserBalance(user2_wallet.address))
         console.log('user2_eth_balance_in_ysgh_pool_after', user2_eth_balance_in_ysgh_pool_after)
         expect(amount_equal_in_precision(user2_eth_balance_in_ysgh_pool_after, user2_eth_balance_in_ysgh_pool_before - total_price)).be.true
 
-        const user2_staked_data_list_after = fetchToUserNFTStakedDataList(await aggressive_bid_pool.getUserNFTStakedDataList(user2_wallet.address))
-        console.log('user2_staked_data_list_after', user2_staked_data_list_after)
+        const user2_staked_after = await aggressive_bid_pool_v2.isStakedNFT(user2_wallet.address, creation_nft_v2.address, sell_token_id)
+        console.log('user2_staked_after', user2_staked_after)
+        expect(user2_staked_after).be.true
 
-        let user2_has_nft = false
-        for (let i = 0; i < user2_staked_data_list_after.length; i++) {
-            const nftStakedData = user2_staked_data_list_after[i]
-            if (nftStakedData.nftAddress == user1_nft.address &&  nftStakedData.tokenId === sell_token_id && nftStakedData.amount > 0) {
-                user2_has_nft = true
-                break
-            }
-        }
-        expect(user2_has_nft).equal(true)
-
-        const user1_nft_owner_in_aggressive_bid_pool_after = await aggressive_bid_pool.getNFTOwner(user1_nft.address, sell_token_id)
+        const user1_nft_owner_in_aggressive_bid_pool_after = await aggressive_bid_pool_v2.getNFTOwner(creation_nft_v2.address, sell_token_id)
         console.log('user1_nft_owner_in_aggressive_bid_pool_after', user1_nft_owner_in_aggressive_bid_pool_after)
         expect(user1_nft_owner_in_aggressive_bid_pool_after).equal(user2_wallet.address)
 

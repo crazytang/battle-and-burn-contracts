@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "../libraries/MatchStructs.sol";
-import "../libraries/UserStakeStructs.sol";
+import "../libraries/UserStakeStructsV2.sol";
 
 interface INFTBattlePoolV2 {
     event SetNFTBattle(address new_nft_battle_address);
@@ -23,7 +22,7 @@ interface INFTBattlePoolV2 {
 
     function setAggressiveBidPool(address _aggressive_bid_address) external;
 
-    function stake(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external;
+    function stake(address _nft_address, UserStakeStructsV2.ApprovalData calldata _approve_data) external;
 
     function stakeFrom(address _owner_address, address _nft_address, uint256 _tokenId) external;
 
@@ -41,7 +40,7 @@ interface INFTBattlePoolV2 {
 
     function unfreezeNFT(address _nft_address, uint256 _tokenId, bool _nft_redeem) external payable;
 
-    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view returns (UserStakeStructs.BattlePoolUserStakedData memory);
+    function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view returns (UserStakeStructsV2.BattlePoolUserStakedData memory);
 
     function userNFTIsAvailable(address _user, address _nft_address, uint256 _tokenId) external view returns (bool);
 

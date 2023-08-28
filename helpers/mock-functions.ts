@@ -20,9 +20,10 @@ import {keccak256} from "@ethersproject/keccak256";
 import {CreationNFTV2, CreationNFTV2__factory} from "../typechain-types";
 import fs from "fs";
 import CreationNFTV2_data from "../contract-data/CreationNFTV2-data";
+import {nowTimestamp} from "./utils";
 
 export const makeNewOrder = (trader_address: string, side: OrderSide, orderType: OrderType, collection_address: string, assetType: AssetType, tokenId: number, amount: number, price: number, nonce: number, payment_token = ethers.constants.AddressZero): OrderStruct => {
-    const now_timestamp = Math.floor((new Date()).getTime() / 1000)
+    const now_timestamp = nowTimestamp()
     /*return {
         trader: trader_address,
         side: numberToBn(side, 0),
@@ -50,8 +51,8 @@ export const makeNewOrder = (trader_address: string, side: OrderSide, orderType:
         amount: numberToBn(amount, 0).toString(),
         paymentToken: payment_token,
         price: numberToBn(price).toString(),
-        listingTime: numberToBn(now_timestamp - 60 * 5, 0).toString(),
-        expirationTime: numberToBn(now_timestamp + 60 * 60 * 24 * 3, 0).toString(),
+        listingTime: numberToBn(now_timestamp - 10, 0).toString(),
+        expirationTime: numberToBn(now_timestamp, 0).toString(),
         trader_nonce: numberToBn(nonce, 0).toString(),
         extraParams: ethers.utils.formatBytes32String('test'),
     }

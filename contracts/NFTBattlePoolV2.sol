@@ -11,7 +11,7 @@ import "./dependencies/IERC721.sol";
 import "./dependencies/IERC165.sol";
 import "./dependencies/Address.sol";
 import "./interfaces/IApproveBySig.sol";
-import "./libraries/UserStakeStructs.sol";
+import "./libraries/UserStakeStructsV2.sol";
 import "./interfaces/INFTBattlePoolV2.sol";
 
 contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
@@ -20,7 +20,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     mapping(address => mapping(uint256 => address)) nft_owners; // NFT的拥有者
 
     // User address => (NFT address => (tokenId => BattlePoolUserStakedData))
-    mapping(address => mapping(address => mapping(uint256 => UserStakeStructs.BattlePoolUserStakedData))) users_staked_data; // 用户质押数据
+    mapping(address => mapping(address => mapping(uint256 => UserStakeStructsV2.BattlePoolUserStakedData))) users_staked_data; // 用户质押数据
 
     bytes4 private constant INTERFACE_ID_APPROVEBYSIG = 0xc06dfe6c; // IApproveBySig.approveBySig.selector
 
@@ -78,7 +78,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @notice 质押NFT
     /// @param _nft_address NFT地址
     /// @param _approve_data NFT的授权数据
-    function stake(address _nft_address, UserStakeStructs.ApprovalData calldata _approve_data) external override whenNotPaused {
+    function stake(address _nft_address, UserStakeStructsV2.ApprovalData calldata _approve_data) external override whenNotPaused {
         require(_nft_address != address(0), "NFTBattlePoolV2: NFT address is zero");
 
         IERC721 _nft = IERC721(_nft_address);
@@ -152,7 +152,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @param _nft_address NFT地址
     /// @param _tokenId NFT的tokenId
     function burnNFT(address _loser_address, address _nft_address, uint256 _tokenId) external override whenNotPaused onlyNFTBattle {
-//        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[_loser_address][_nft_address][_tokenId];
+//        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[_loser_address][_nft_address][_tokenId];
 //        require(_staked_data.amount > 0, "NFTBattlePoolV2: NFT is not staked");
 //        require(_staked_data.isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
 
@@ -172,7 +172,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @param _tokenId NFT的tokenId
     /// @param _beneficiary_address 执行结果的受益人地址
     function freezeNFT(address _nft_owner, address _nft_address, uint256 _tokenId, address _beneficiary_address) external override whenNotPaused onlyNFTBattle {
-        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[_nft_owner][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[_nft_owner][_nft_address][_tokenId];
         require(_staked_data.amount > 0, "NFTBattlePoolV2: NFT is not staked");
         require(_staked_data.isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
 
@@ -189,7 +189,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     function unfreezeNFT(address _nft_address, uint256 _tokenId, bool _nft_redeem) external payable override whenNotPaused {
         require(msg.value >= 0.01 ether, "NFTBattlePoolV2: msg.value is less than 0.01 ether");
 
-        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[msg.sender][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[msg.sender][_nft_address][_tokenId];
         require(_staked_data.amount > 0, "NFTBattlePoolV2: NFT is not staked");
 
         if (_staked_data.isFrozen == false) {
@@ -216,7 +216,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @param _tokenId NFT的tokenId
     /// @return NFT的数据
     function getUserStakedData(address _user, address _nft_address, uint256 _tokenId) external view override
-    returns (UserStakeStructs.BattlePoolUserStakedData memory) {
+    returns (UserStakeStructsV2.BattlePoolUserStakedData memory) {
         return users_staked_data[_user][_nft_address][_tokenId];
     }
 
@@ -230,7 +230,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
             return false;
         }
 
-        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[_user][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[_user][_nft_address][_tokenId];
         return _staked_data.amount > 0 && _staked_data.isFrozen == false;
     }
 
@@ -243,7 +243,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     }
 
     function _redeemFrom(address _owner_address, address _to, address _nft_address, uint256 _tokenId) private {
-        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[_owner_address][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[_owner_address][_nft_address][_tokenId];
         require(_staked_data.amount > 0, "NFTBattlePoolV2: NFT is not staked");
         require(_staked_data.isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
 
@@ -259,7 +259,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     }
 
     function _redeem(address _owner_address, address _nft_address, uint256 _tokenId) private {
-        UserStakeStructs.BattlePoolUserStakedData memory _staked_data = users_staked_data[_owner_address][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData memory _staked_data = users_staked_data[_owner_address][_nft_address][_tokenId];
         require(_staked_data.amount > 0, "NFTBattlePoolV2: NFT is not staked");
         require(_staked_data.isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
 
@@ -273,13 +273,12 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     }
 
     function _setUserStakedData(address _user, address _nft_address, uint256 _tokenId) private {
-        UserStakeStructs.BattlePoolUserStakedData storage _staked_data = users_staked_data[_user][_nft_address][_tokenId];
+        UserStakeStructsV2.BattlePoolUserStakedData storage _staked_data = users_staked_data[_user][_nft_address][_tokenId];
 
         if (_staked_data.amount > 0) {
             return;
         }
 
-        _staked_data.userAddress = _user;
         _staked_data.nftAddress = _nft_address;
         _staked_data.tokenId = _tokenId;
         _staked_data.amount = 1;
@@ -293,7 +292,7 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     function _removeUserStakedData(address _user, address _nft_address, uint256 _tokenId) private {
         nft_owners[_nft_address][_tokenId] = address(0);
 
-//        UserStakeStructs.BattlePoolUserStakedData memory emptyData;
+//        UserStakeStructsV2.BattlePoolUserStakedData memory emptyData;
         delete users_staked_data[_user][_nft_address][_tokenId]; // = emptyData;
     }
 }

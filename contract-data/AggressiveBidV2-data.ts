@@ -1,14 +1,14 @@
-// deployed_index: 31
-// deployed_at: 2023/08/28 17:45:54
+// deployed_index: 32
+// deployed_at: 2023/08/28 19:48:46
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
-const AggressiveBid_data: ProxyContractData = {
+const AggressiveBidV2_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
-    contract_name: 'AggressiveBid',
-    address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
-    proxy_address: '0x2baA1f9FAC2e5339477D9e8ac88b9D3D2D6C2574',
-    target_address: '0x65E00409de7C4F516e1547F9287667a00a5c1012',
+    contract_name: 'AggressiveBidV2',
+    address: '0x0035a3Dd7D7c7A51C6fe6ED46891296BC55afE05',
+    proxy_address: '0x0035a3Dd7D7c7A51C6fe6ED46891296BC55afE05',
+    target_address: '0x89C6F8D60315a87C18b1e33298f35780A5f865C1',
     libraries: [],
     abi:  [
     {
@@ -392,6 +392,19 @@ const AggressiveBid_data: ProxyContractData = {
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint96",
+          "name": "transfer_fee_numberator",
+          "type": "uint96"
+        }
+      ],
+      "name": "UpdatedTransferFeeFromAggressiveBidDistribution",
+      "type": "event"
+    },
+    {
       "inputs": [],
       "name": "aggressive_bid_distribution",
       "outputs": [
@@ -406,10 +419,10 @@ const AggressiveBid_data: ProxyContractData = {
     },
     {
       "inputs": [],
-      "name": "aggressive_bid_pool",
+      "name": "aggressive_bid_pool_v2",
       "outputs": [
         {
-          "internalType": "contract IAggressiveBidPool",
+          "internalType": "contract IAggressiveBidPoolV2",
           "name": "",
           "type": "address"
         }
@@ -822,6 +835,19 @@ const AggressiveBid_data: ProxyContractData = {
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "fee_denominator",
+      "outputs": [
+        {
+          "internalType": "uint96",
+          "name": "",
+          "type": "uint96"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "components": [
@@ -921,7 +947,7 @@ const AggressiveBid_data: ProxyContractData = {
         },
         {
           "internalType": "address",
-          "name": "_aggressive_bid_pool",
+          "name": "_aggressive_bid_pool_v2",
           "type": "address"
         }
       ],
@@ -1006,7 +1032,7 @@ const AggressiveBid_data: ProxyContractData = {
       "inputs": [
         {
           "internalType": "address",
-          "name": "_aggressive_bid_pool",
+          "name": "_aggressive_bid_pool_v2",
           "type": "address"
         }
       ],
@@ -1056,7 +1082,27 @@ const AggressiveBid_data: ProxyContractData = {
     },
     {
       "inputs": [],
+      "name": "transfer_fee_numberator",
+      "outputs": [
+        {
+          "internalType": "uint96",
+          "name": "",
+          "type": "uint96"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "updateTransferFeeFromAggressiveBidDistribution",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1091,4 +1137,4 @@ const AggressiveBid_data: ProxyContractData = {
   
 };
 
-export default AggressiveBid_data;
+export default AggressiveBidV2_data;

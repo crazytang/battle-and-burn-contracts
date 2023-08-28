@@ -1,5 +1,5 @@
-// ##deployed index: 31
-// ##deployed at: 2023/08/28 17:45:54
+// ##deployed index: 32
+// ##deployed at: 2023/08/28 19:48:46
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -12,20 +12,22 @@ import "./dependencies/IERC721.sol";
 import "./dependencies/IERC1155.sol";
 import "./dependencies/ECDSA.sol";
 import "./dependencies/MerkleProof.sol";
-import "./interfaces/IAggressiveBid.sol";
 import "./interfaces/IAggressiveBidDistribution.sol";
-import "./interfaces/IAggressiveBidPool.sol";
+import "./interfaces/IAggressiveBidPoolV2.sol";
 import "./interfaces/IYsghPool.sol";
+import "./interfaces/IAggressiveBidV2.sol";
 import "./libraries/AggressiveBidStructs.sol";
-//import "./libraries/Utils.sol";
 
-contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+contract AggressiveBidV2 is IAggressiveBidV2, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
 
     using Address for address;  // for isContract
     using ECDSA for bytes32;
 
+    uint96 public transfer_fee_numberator;
+    uint96 public constant fee_denominator = 10000;
+
     IAggressiveBidDistribution public override aggressive_bid_distribution;
-    IAggressiveBidPool public override aggressive_bid_pool;
+    IAggressiveBidPoolV2 public override aggressive_bid_pool_v2;
     IYsghPool public override ysgh_pool;
     address public verifier_address;
 
@@ -33,7 +35,7 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
     mapping(bytes32 => bool) public override cancelled_or_filled;
 
     /// @notice This method is called by the proxy contract to initialize the contract.
-    function initialize(address _aggressive_bid_distbn_address, address _ysgh_pool_address, address _aggressive_bid_pool) public initializer {
+    function initialize(address _aggressive_bid_distbn_address, address _ysgh_pool_address, address _aggressive_bid_pool_v2) public initializer {
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
@@ -41,8 +43,8 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         require(_aggressive_bid_distbn_address.isContract(), "AggressiveBid: _aggressive_bid_distbn_address is not a contract address");
         aggressive_bid_distribution = IAggressiveBidDistribution(_aggressive_bid_distbn_address);
 
-        require(_aggressive_bid_pool.isContract(), "AggressiveBid: _aggressive_bid_pool is not a contract address");
-        aggressive_bid_pool = IAggressiveBidPool(_aggressive_bid_pool);
+        require(_aggressive_bid_pool_v2.isContract(), "AggressiveBid: _aggressive_bid_pool_v2 is not a contract address");
+        aggressive_bid_pool_v2 = IAggressiveBidPoolV2(_aggressive_bid_pool_v2);
 
         require(_ysgh_pool_address.isContract(), "AggressiveBid: _ysgh_pool_address is not a contract address");
         ysgh_pool = IYsghPool(_ysgh_pool_address);
@@ -63,11 +65,11 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         emit SetAggressiveBidDistribution(_aggressive_bid_distbn_address);
     }
 
-    function setAggressiveBidPool(address _aggressive_bid_pool) external override onlyOwner {
-        require(_aggressive_bid_pool.isContract(), "AggressiveBid: _aggressive_bid_pool is not a contract address");
-        aggressive_bid_pool = IAggressiveBidPool(_aggressive_bid_pool);
+    function setAggressiveBidPool(address _aggressive_bid_pool_v2) external override onlyOwner {
+        require(_aggressive_bid_pool_v2.isContract(), "AggressiveBid: _aggressive_bid_pool_v2 is not a contract address");
+        aggressive_bid_pool_v2 = IAggressiveBidPoolV2(_aggressive_bid_pool_v2);
 
-        emit SetAggressiveBidPool(_aggressive_bid_pool);
+        emit SetAggressiveBidPool(_aggressive_bid_pool_v2);
     }
 
     function setYsghPool(address _ysgh_pool_address) external override onlyOwner {
@@ -82,6 +84,15 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         verifier_address = _verifier_address;
 
         emit SetVerifierAddress(_verifier_address);
+    }
+
+    function updateTransferFeeFromAggressiveBidDistribution() external override {
+        transfer_fee_numberator = aggressive_bid_distribution.bid_royalty_rate();
+
+        require(transfer_fee_numberator <= fee_denominator,
+            "AggressiveBid: transfer fee numberator must be less than or equal to fee denominator");
+
+        emit UpdatedTransferFeeFromAggressiveBidDistribution(transfer_fee_numberator);
     }
 
     function execute(AggressiveBidStructs.Input calldata _sell, AggressiveBidStructs.Input calldata _buy) external override nonReentrant whenNotPaused {
@@ -130,13 +141,7 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
     }
 
     function _fundsTransfer(address _sell_trader, uint256 _buy_price, address _buy_trader, address _buy_payment_token) internal {
-        uint96 _transfer_fee_numberator = aggressive_bid_distribution.bid_royalty_rate();
-        uint96 _fee_denominator = aggressive_bid_distribution.denominator();
-
-        require(_transfer_fee_numberator <= _fee_denominator,
-            "AggressiveBid: transfer fee numberator must be less than or equal to fee denominator");
-
-        uint256 _fee = _buy_price * _transfer_fee_numberator / _fee_denominator;
+        uint256 _fee = _buy_price * transfer_fee_numberator / fee_denominator;
 
         uint256 _to_seller_amount = _buy_price - _fee;
 
@@ -163,7 +168,7 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         uint256 tokenId,
         uint256 amount
     ) internal {
-        aggressive_bid_pool.transferNFTFrom(from, to, collection, tokenId, amount);
+        aggressive_bid_pool_v2.transferNFTFrom(from, to, collection, tokenId, amount);
     }
 
     function _hashOrder(AggressiveBidStructs.Order calldata _order) private pure returns (bytes32) {
@@ -195,7 +200,7 @@ contract AggressiveBid is IAggressiveBid, Initializable, OwnableUpgradeable, Pau
         require(_order.price > 0, "AggressiveBid: price must be greater than 0");
         if (_order.side == AggressiveBidStructs.Side.Sell) {
             require(_order.listingTime <= _order.expirationTime, "AggressiveBid: listingTime must be less than current timestamp");
-            require(_order.expirationTime <= block.timestamp, "AggressiveBid: expirationTime must be less than current timestamp");
+            require(_order.expirationTime < block.timestamp, "AggressiveBid: expirationTime must be greater than current timestamp");
         }
 
         if (_order.side == AggressiveBidStructs.Side.Buy) {

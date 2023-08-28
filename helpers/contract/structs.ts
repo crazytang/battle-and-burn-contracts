@@ -7,6 +7,7 @@ import {AggressiveBidStructs} from "../../typechain-types/AggressiveBid";
 import OrderStruct = AggressiveBidStructs.OrderStruct;
 import InputStruct = AggressiveBidStructs.InputStruct;
 import MerkleTreeStruct = AggressiveBidStructs.MerkleTreeStruct;
+import {PromiseOrValue} from "../../typechain-types/common";
 
 export interface DistributionData {
     creator: string
@@ -253,4 +254,33 @@ export interface InputData extends InputStruct {
     s: string;
     merkleTree: MerkleTreeStruct;
     blockNumber: BigNumber;
+}
+
+export interface InputDataV2 {
+    order: AggressiveOrder;
+    v: number
+    r: string
+    s: string
+    extraSignature: string
+    merkleTree: MerkleTreeData
+    blockNumber: number
+}
+
+export interface MerkleTreeData {
+    root: string;
+    proof: string[];
+};
+export interface AggressiveOrder  {
+    trader: string
+    side: OrderSide
+    orderType: OrderType
+    collection: string
+    assetType: AssetType
+    tokenId: number
+    amount: number
+    paymentToken: string
+    price: BigNumber
+    listingTime: number
+    expirationTime: number
+    trader_nonce: number
 }
