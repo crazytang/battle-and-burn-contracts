@@ -1,5 +1,5 @@
-// ##deployed index: 46
-// ##deployed at: 2023/08/28 21:09:10
+// ##deployed index: 59
+// ##deployed at: 2023/09/02 17:02:55
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -15,15 +15,14 @@ import "./libraries/UserStakeStructsV2.sol";
 import "./interfaces/INFTBattlePoolV2.sol";
 
 contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
+    // NFT Id => owner
+    mapping(bytes32 => address) nft_owners; // NFT的拥有者
 
-    // NFT address => (tokenId => owner)
-    mapping(address => mapping(uint256 => address)) nft_owners; // NFT的拥有者
+    // User address => (NFT Id => amount), when amount > 0, means the user has staked the NFT
+    mapping(address => mapping(bytes32 => uint256)) users_staked;
 
-    // User address => (NFT address => (tokenId => amount))
-    mapping(address => mapping(address => mapping(uint256 => uint256))) users_staked;
-
-    // User address => (NFT address => (tokenId => BattlePoolUserNFTFrozenData)) 用户冻结数据
-    mapping(address => mapping(address => mapping(uint256 => UserStakeStructsV2.BattlePoolUserNFTFrozenData))) users_staked_frozen_data;
+    // User address => (NFT Id => beneficiary) 用户的NFT被冻结后的受益人
+    mapping(address => mapping(bytes32 => address)) users_staked_frozen_beneficiary;
 
     bytes4 private constant INTERFACE_ID_APPROVEBYSIG = 0xc06dfe6c; // IApproveBySig.approveBySig.selector
 
@@ -92,7 +91,9 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
 
         require(_nft.getApproved(_approve_data.tokenId) == address(this), "NFTBattlePoolV2: NFT contract does not approve this contract");
         _nft.transferFrom(_approve_data.userAddress, address(this), _approve_data.tokenId);
-        _setUserStakedData(_approve_data.userAddress, _nft_address, _approve_data.tokenId);
+
+        bytes32 _nft_id = _getNFTId(_nft_address, _approve_data.tokenId);
+        _setUserStakedData(_approve_data.userAddress, _nft_id);
 
         emit Staked(_approve_data.userAddress, _nft_address, _approve_data.tokenId);
     }
@@ -108,7 +109,9 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
         require(_nft.ownerOf(_tokenId) == msg.sender, "NFTBattlePoolV2: msg.sender is not the owner of the token");
         require(_nft.getApproved(_tokenId) == address(this), "NFTBattlePoolV2: NFT contract does not approve this contract");
         _nft.transferFrom(msg.sender, address(this), _tokenId);
-        _setUserStakedData(_to, _nft_address, _tokenId);
+
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        _setUserStakedData(_to, _nft_id);
 
         emit Staked(_to, _nft_address, _tokenId);
     }
@@ -122,9 +125,11 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
         require(_nft_address != address(0), "NFTBattlePoolV2: NFT address is zero");
         IERC721 _nft = IERC721(_nft_address);
         require(_nft.ownerOf(_tokenId) == address(this), "NFTBattlePoolV2: NFT is not owned by this contract");
-        require(nft_owners[_nft_address][_tokenId] == address(0), "NFTBattlePoolV2: NFT had staked by someone");
 
-        _setUserStakedData(_to, _nft_address, _tokenId);
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        require(nft_owners[_nft_id] == address(0), "NFTBattlePoolV2: NFT had staked by someone");
+
+        _setUserStakedData(_to, _nft_id);
 
         emit TransferedTo(msg.sender, _to, _nft_address, _tokenId);
     }
@@ -157,9 +162,13 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     function burnNFT(address _loser_address, address _nft_address, uint256 _tokenId) external override whenNotPaused onlyNFTBattle {
         IERC721 _nft = IERC721(_nft_address);
         require(_nft.ownerOf(_tokenId) == address(this), "NFTBattlePoolV2: NFT is not owned by this contract");
+
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        require(nft_owners[_nft_id] == _loser_address, "NFTBattlePoolV2: NFT is not owned by this address");
+
         _nft.transferFrom(address(this), burn_to_address, _tokenId);
 
-        _removeUserStakedData(_loser_address, _nft_address, _tokenId);
+        _removeUserStakedData(_loser_address, _nft_id);
 
         emit BurnedNFT(_loser_address, _nft_address, _tokenId, burn_to_address);
     }
@@ -171,12 +180,11 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @param _tokenId NFT的tokenId
     /// @param _beneficiary_address 执行结果的受益人地址
     function freezeNFT(address _nft_owner, address _nft_address, uint256 _tokenId, address _beneficiary_address) external override whenNotPaused onlyNFTBattle {
-        require(users_staked[_nft_owner][_nft_address][_tokenId] > 0, "NFTBattlePoolV2: NFT is not staked");
-        require(users_staked_frozen_data[_nft_owner][_nft_address][_tokenId].isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        require(users_staked[_nft_owner][_nft_id] > 0, "NFTBattlePoolV2: NFT is not staked");
+        require(users_staked_frozen_beneficiary[_nft_owner][_nft_id] == address(0), "NFTBattlePoolV2: NFT is frozen");
 
-        users_staked_frozen_data[_nft_owner][_nft_address][_tokenId].isFrozen = true;
-        users_staked_frozen_data[_nft_owner][_nft_address][_tokenId].beneficiaryAddress = _beneficiary_address;
-
+        users_staked_frozen_beneficiary[_nft_owner][_nft_id] = _beneficiary_address;
         emit FrozenNFT(_nft_owner, _nft_address, _tokenId, _beneficiary_address);
     }
 
@@ -187,18 +195,18 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     function unfreezeNFT(address _nft_address, uint256 _tokenId, bool _nft_redeem) external payable override whenNotPaused {
         require(msg.value >= 0.01 ether, "NFTBattlePoolV2: msg.value is less than 0.01 ether");
 
-        require(users_staked[msg.sender][_nft_address][_tokenId] > 0, "NFTBattlePoolV2: NFT is not staked");
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        require(users_staked[msg.sender][_nft_id] > 0, "NFTBattlePoolV2: NFT is not staked");
 
-        if (users_staked_frozen_data[msg.sender][_nft_address][_tokenId].isFrozen == false) {
+        if (users_staked_frozen_beneficiary[msg.sender][_nft_id] == address(0)) {
             return;
         }
 
-        address _beneficiary_address = users_staked_frozen_data[msg.sender][_nft_address][_tokenId].beneficiaryAddress;
+        address _beneficiary_address = users_staked_frozen_beneficiary[msg.sender][_nft_id];
         (bool success, ) = _beneficiary_address.call{value: msg.value}("");
         require(success, "NFTBattlePoolV2: Failed to send to beneficiary");
 
-        users_staked_frozen_data[msg.sender][_nft_address][_tokenId].isFrozen = false;
-        users_staked_frozen_data[msg.sender][_nft_address][_tokenId].beneficiaryAddress = address(0);
+        delete users_staked_frozen_beneficiary[msg.sender][_nft_id];
 
         if (_nft_redeem) {
             _redeem(msg.sender, _nft_address, _tokenId);
@@ -217,16 +225,23 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
             return false;
         }
 
-        return users_staked[_user][_nft_address][_tokenId] > 0
-            && users_staked_frozen_data[_user][_nft_address][_tokenId].isFrozen == false;
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        return users_staked[_user][_nft_id] > 0
+            && users_staked_frozen_beneficiary[_user][_nft_id] == address(0);
     }
 
     function isStakedNFT(address _user_address, address _nft_address, uint256 _tokenId) external view override returns (bool) {
-        return users_staked[_user_address][_nft_address][_tokenId] > 0;
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        return users_staked[_user_address][_nft_id] > 0;
     }
 
     function isFrozenNFT(address _user_address, address _nft_address, uint256 _tokenId) external view override returns (bool) {
-        return users_staked_frozen_data[_user_address][_nft_address][_tokenId].isFrozen;
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        return users_staked_frozen_beneficiary[_user_address][_nft_id] != address(0);
+    }
+
+    function getNFTId(address _nft_address, uint256 _tokenId) external pure override returns(bytes32) {
+        return _getNFTId(_nft_address, _tokenId);
     }
 
     /// @notice 获取NFT的拥有者
@@ -234,49 +249,45 @@ contract NFTBattlePoolV2 is INFTBattlePoolV2, Initializable, OwnableUpgradeable,
     /// @param _tokenId NFT的tokenId
     /// @return NFT的拥有者地址
     function getNFTOwner(address _nft_address, uint256 _tokenId) external view override returns (address) {
-        return nft_owners[_nft_address][_tokenId];
+        return nft_owners[_getNFTId(_nft_address, _tokenId)];
     }
 
     function _redeemFrom(address _owner_address, address _to, address _nft_address, uint256 _tokenId) private {
-        require(users_staked[_owner_address][_nft_address][_tokenId] > 0, "NFTBattlePoolV2: NFT is not staked");
-        require(users_staked_frozen_data[_owner_address][_nft_address][_tokenId].isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
-
-        require(_owner_address == nft_owners[_nft_address][_tokenId], "NFTBattlePoolV2: NFT is not owned by this address");
+        bytes32 _nft_id = _getNFTId(_nft_address, _tokenId);
+        require(users_staked[_owner_address][_nft_id] > 0, "NFTBattlePoolV2: NFT is not staked");
+        require(users_staked_frozen_beneficiary[_owner_address][_nft_id] == address(0), "NFTBattlePoolV2: NFT is frozen");
+        require(_owner_address == nft_owners[_nft_id], "NFTBattlePoolV2: NFT is not owned by this address");
 
         IERC721 _nft = IERC721(_nft_address);
         require(_nft.ownerOf(_tokenId) == address(this), "NFTBattlePoolV2: NFT is not owned by this contract");
         _nft.transferFrom(address(this), _to, _tokenId);
 
-        _removeUserStakedData(_owner_address, _nft_address, _tokenId);
+        _removeUserStakedData(_owner_address, _nft_id);
 
-        emit Redeemed(_owner_address, _nft_address, _tokenId);
+        emit RedeemedFrom(_owner_address, _to, _nft_address, _tokenId);
     }
 
     function _redeem(address _owner_address, address _nft_address, uint256 _tokenId) private {
-        require(users_staked[_owner_address][_nft_address][_tokenId] > 0, "NFTBattlePoolV2: NFT is not staked");
-        require(users_staked_frozen_data[_owner_address][_nft_address][_tokenId].isFrozen == false, "NFTBattlePoolV2: NFT is frozen");
-
-        IERC721 _nft = IERC721(_nft_address);
-        require(_nft.ownerOf(_tokenId) == address(this), "NFTBattlePoolV2: NFT is not owned by this contract");
-        _nft.transferFrom(address(this), _owner_address, _tokenId);
-
-        _removeUserStakedData(_owner_address, _nft_address, _tokenId);
-
-        emit Redeemed(_owner_address, _nft_address, _tokenId);
+        _redeemFrom(_owner_address, _owner_address, _nft_address, _tokenId);
     }
 
-    function _setUserStakedData(address _user, address _nft_address, uint256 _tokenId) private {
-        if (users_staked[_user][_nft_address][_tokenId] == 1) {
+    function _setUserStakedData(address _user, bytes32 _nft_id) private {
+        if (users_staked[_user][_nft_id] == 1) {
             return;
         }
 
-        users_staked[_user][_nft_address][_tokenId] = 1;
-        nft_owners[_nft_address][_tokenId] = _user;
+        users_staked[_user][_nft_id] = 1;
+        nft_owners[_nft_id] = _user;
     }
 
-    function _removeUserStakedData(address _user, address _nft_address, uint256 _tokenId) private {
-        nft_owners[_nft_address][_tokenId] = address(0);
-        users_staked[_user][_nft_address][_tokenId] = 0;
-        users_staked_frozen_data[_user][_nft_address][_tokenId].isFrozen = false;
+    function _removeUserStakedData(address _user, bytes32 _nft_id) private {
+//        nft_owners[_nft_id] = address(0);
+//        users_staked[_user][_nft_id] = 0;
+        delete nft_owners[_nft_id];
+        delete users_staked[_user][_nft_id];
+    }
+
+    function _getNFTId(address _nft_address, uint256 _tokenId) private pure returns(bytes32) {
+        return keccak256(abi.encode(_nft_address, _tokenId));
     }
 }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 library UserStakeStructsV2 {
+/*
     struct BattlePoolUserStakedData {
         address nftAddress;
         uint256 tokenId;
@@ -22,6 +23,7 @@ library UserStakeStructsV2 {
         uint256 amount;
         uint256 lastTradedAt;
     }
+*/
 
     struct ApprovalData {
         address userAddress;

@@ -1,14 +1,14 @@
-// deployed_index: 113
-// deployed_at: 2023/08/28 22:41:53
+// deployed_index: 128
+// deployed_at: 2023/09/02 18:48:01
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattleV2_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
     contract_name: 'NFTBattleV2',
-    address: '0x12c9aA75E4b2c15079CBC38738e087Ea203EEe56',
-    proxy_address: '0x12c9aA75E4b2c15079CBC38738e087Ea203EEe56',
-    target_address: '0xF9a1988541c9547B040b8aBC768d73624702cC61',
+    address: '0x6bDe2F4c490Fc5FB43B6fDCD6D73EB23819Ee6D1',
+    proxy_address: '0x6bDe2F4c490Fc5FB43B6fDCD6D73EB23819Ee6D1',
+    target_address: '0xDE4eEab1D5238EBC7197b046F6a21011dec3e503',
     libraries: [],
     abi:  [
     {
@@ -23,26 +23,8 @@ const NFTBattleV2_data: ProxyContractData = {
         {
           "indexed": false,
           "internalType": "address",
-          "name": "winner_nft",
+          "name": "winner",
           "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "winner_tokenId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "loser_nft",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "loser_tokenId",
-          "type": "uint256"
         },
         {
           "indexed": false,
@@ -72,6 +54,12 @@ const NFTBattleV2_data: ProxyContractData = {
         {
           "indexed": false,
           "internalType": "address",
+          "name": "winner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
           "name": "winner_nft",
           "type": "address"
         },
@@ -80,30 +68,6 @@ const NFTBattleV2_data: ProxyContractData = {
           "internalType": "uint256",
           "name": "winner_tokenId",
           "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "winner_jpg",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "loser_nft",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "loser_tokenId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "loser_jgp",
-          "type": "string"
         },
         {
           "indexed": false,
@@ -138,31 +102,6 @@ const NFTBattleV2_data: ProxyContractData = {
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "arena_owner_signature",
-          "type": "bytes"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "challenge_owner_signature",
-          "type": "bytes"
-        },
-        {
-          "indexed": false,
-          "internalType": "bytes",
-          "name": "extra_signature",
-          "type": "bytes"
-        }
-      ],
-      "name": "MatchDataSignatures",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
           "indexed": true,
           "internalType": "address",
           "name": "previousOwner",
@@ -189,6 +128,19 @@ const NFTBattleV2_data: ProxyContractData = {
         }
       ],
       "name": "Paused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "battle_ko_address",
+          "type": "address"
+        }
+      ],
+      "name": "SetBattleKO",
       "type": "event"
     },
     {
@@ -255,6 +207,19 @@ const NFTBattleV2_data: ProxyContractData = {
       ],
       "name": "Unpaused",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "battle_ko",
+      "outputs": [
+        {
+          "internalType": "contract IBattleKOScore",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
@@ -973,130 +938,6 @@ const NFTBattleV2_data: ProxyContractData = {
     {
       "inputs": [
         {
-          "internalType": "bytes32",
-          "name": "_match_id",
-          "type": "bytes32"
-        }
-      ],
-      "name": "getMatchData",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "arenaOwner",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "arenaNFT",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "challengeOwner",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "challengeNFT",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "winner",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "voteArenaCount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "voteChallengeCount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "arenaTokenId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "challengeTokenId",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "determinedAt",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "merkleTreeRoot",
-              "type": "bytes32"
-            }
-          ],
-          "internalType": "struct MatchStructsV2.MatchData",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_nft_address",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_nft_tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "getNFTKOScore",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_nft_address",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_nft_tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "getNFTWonMatches",
-      "outputs": [
-        {
-          "internalType": "bytes32[]",
-          "name": "",
-          "type": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "address",
           "name": "_user",
           "type": "address"
@@ -1269,6 +1110,19 @@ const NFTBattleV2_data: ProxyContractData = {
     {
       "inputs": [],
       "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_battle_ko_address",
+          "type": "address"
+        }
+      ],
+      "name": "setBattleKO",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

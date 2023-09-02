@@ -9,7 +9,7 @@ import {
 } from "../../helpers/wallets/user_wallet_getter";
 import {
     amount_equal_in_precision,
-    bnToNoPrecisionNumber, bnToNumber, getGasUsedAndGasPriceFromReceipt,
+    bnToNoPrecisionNumber, bnToNumber, getGasUsedAndGasPriceFromReceipt, getLogFromReceipt,
     getTransactionOptions,
     numberToBn,
     recoverAddressFromSignedMessage,
@@ -17,6 +17,7 @@ import {
     signMessageByWallet, sleep, solidityAbiEncode, solidityAbiEncodeAndKeccak256
 } from "../../helpers/contract/contract-utils";
 import {
+    BattleKOScore, BattleKOScore__factory,
     CreationNFT,
     CreationNFT__factory,
     CreationNFTV2,
@@ -47,10 +48,12 @@ import {deployCreationNFT, mintACreationNFT} from "../../helpers/mock-functions"
 import NFTBattleV2_data from "../../contract-data/NFTBattleV2-data";
 import NFTBattlePoolV2_data from "../../contract-data/NFTBattlePoolV2-data";
 import CreationNFTV2_data from "../../contract-data/CreationNFTV2-data";
+import BattleKOScore_data from "../../contract-data/BattleKOScore-data";
+import {TransactionReceipt} from "@ethersproject/abstract-provider";
 
 
 let tx: ContractTransaction
-let receipt: ContractReceipt
+let receipt: TransactionReceipt
 const provider = contract_l2_provider_getter()
 const admin_wallet: Wallet = get_admin_wallet(provider)
 const user1_wallet: Wallet = get_user_wallet_5712(provider)
@@ -59,6 +62,7 @@ const user3_wallet: Wallet = get_user_wallet_4871(provider)
 let nft_battle_v2: NFTBattleV2
 let nft_battle_pool_v2: NFTBattlePoolV2
 let creation_nft_v2: CreationNFTV2
+let battle_ko_score: BattleKOScore
 let burn_to_address: string
 const ipfs_service = new IpfsService()
 
@@ -73,6 +77,9 @@ before(async function () {
 
     creation_nft_v2 = CreationNFTV2__factory.connect(CreationNFTV2_data.address, admin_wallet)
     console.log('creation_nft_v2.address', creation_nft_v2.address)
+
+    battle_ko_score = BattleKOScore__factory.connect(BattleKOScore_data.address, admin_wallet)
+    console.log('battle_ko_score.address', battle_ko_score.address)
 })
 
 describe("NFTBattle.sol testing", function () {
@@ -81,6 +88,18 @@ describe("NFTBattle.sol testing", function () {
         const nft_battle_pool_address = await nft_battle_v2.nft_battle_pool_v2()
         console.log('nft_battle_pool_address', nft_battle_pool_address)
         expect(nft_battle_pool_address).to.equal(NFTBattlePoolV2_data.address)
+
+        const battle_ko_address = await nft_battle_v2.battle_ko()
+        console.log('battle_ko_address', battle_ko_address)
+        expect(battle_ko_address).to.equal(BattleKOScore_data.address)
+
+        const creation_nft_v2_address = await nft_battle_v2.creation_nft_v2()
+        console.log('creation_nft_v2_address', creation_nft_v2_address)
+        expect(creation_nft_v2_address).to.equal(CreationNFTV2_data.address)
+
+        const verifier_address = await nft_battle_v2.verifier_address()
+        console.log('verifier_address', verifier_address)
+        expect(verifier_address).to.equal(admin_wallet.address)
     })
 
     it.skip('test determine()', async () => {
@@ -116,28 +135,19 @@ describe("NFTBattle.sol testing", function () {
             loser_token_id = match_data_param.arenaTokenId
         }
 
-        const old_winner_match_ids = await nft_battle_v2.getNFTWonMatches(winner_nft, winner_token_id)
-        console.log('old_winner_match_ids', old_winner_match_ids)
-
-        const old_winner_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(winner_nft, winner_token_id))
+        const old_winner_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(winner_nft, winner_token_id))
         console.log('old_winner_ko_score', old_winner_ko_score)
 
-        const old_loser_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(loser_nft, loser_token_id))
+        const old_loser_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(loser_nft, loser_token_id))
         console.log('old_loser_ko_score', old_loser_ko_score)
 
         await sleep(10000) // wait for 10 seconds
         // to redeem nft or not
-        const redeem_nft = false
+        const redeem_nft = true
         tx = await nft_battle_v2.determine(match_data_param, redeem_nft, getTransactionOptions())
         console.log('nft_battle_v2.determine() tx', tx.hash)
         receipt = await tx.wait()
         console.log('nft_battle_v2.determine() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
-
-        // verify data
-        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
-        console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.winner).to.equal(winner_address)
-        expect(match_data_in_contract.determinedAt).greaterThan(0)
 
         if (match_data_param.challengeNFT != ethers.constants.AddressZero) {
             const new_loser_nft_owner = await creation_nft_v2.ownerOf(loser_token_id)
@@ -145,12 +155,7 @@ describe("NFTBattle.sol testing", function () {
             expect(new_loser_nft_owner).to.equal(burn_to_address)
         }
 
-        const new_winner_match_ids = await nft_battle_v2.getNFTWonMatches(winner_nft, winner_token_id)
-        console.log('new_winner_match_ids', new_winner_match_ids)
-        expect(new_winner_match_ids.length).to.equal(old_winner_match_ids.length + 1)
-        expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data_param.matchId)
-
-        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(winner_nft, winner_token_id))
+        const new_winner_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
         expect(new_winner_ko_score).to.equal(old_winner_ko_score + old_loser_ko_score + 1)
 
@@ -230,7 +235,7 @@ describe("NFTBattle.sol testing", function () {
         }
 
         const tx_data = {...getTransactionOptions(), value: numberToBn(eth_amount)}
-        const nft_redeem = false
+        const nft_redeem = true
 
         const old_admin_eth_balance = bnToNumber(await admin_wallet.getBalance())
         console.log('old_admin_eth_balance', old_admin_eth_balance)
@@ -318,32 +323,29 @@ describe("NFTBattle.sol testing", function () {
         console.log('nft_battle_v2.determineIncludeJPG() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // verify data
-        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
-        console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
-        expect(match_data_in_contract.winner).to.equal(winner.address)
-        expect(match_data_in_contract.determinedAt).greaterThan(0)
+        if (winner_jpg != '') {
+            // 检查是否已经铸造NFT
+            const event_param = getLogFromReceipt(receipt, nft_battle_v2, 'DeterminedIncludeJPG')
 
-        if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
-            winner_nft = match_data_in_contract.arenaNFT
-            winner_token_id = match_data_in_contract.arenaTokenId
+            winner_nft = event_param.winner_nft
+            winner_token_id = event_param.winner_tokenId
         } else {
-            winner_nft = match_data_in_contract.challengeNFT
-            winner_token_id = match_data_in_contract.challengeTokenId
+            if (match_data_param.voteArenaCount > match_data_param.voteChallengeCount) {
+                winner_nft = match_data_param.arenaNFT
+                winner_token_id = match_data_param.arenaTokenId
+            } else {
+                winner_nft = match_data_param.challengeNFT
+                winner_token_id = match_data_param.challengeTokenId
+            }
         }
-
-        const new_winner_match_ids = await nft_battle_v2.getNFTWonMatches(winner_nft, winner_token_id)
-        console.log('new_winner_match_ids', new_winner_match_ids)
-        expect(new_winner_match_ids.length).to.equal( 1)
-        expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data_param.matchId)
 
         let loser_ko_score = 0
         if (loser_nft != ethers.constants.AddressZero) {
-            loser_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(loser_nft, loser_token_id))
+            loser_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(loser_nft, loser_token_id))
         }
         console.log('loser_ko_score', loser_ko_score)
 
-        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(winner_nft, winner_token_id))
+        const new_winner_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
         expect(new_winner_ko_score).to.equal(loser_ko_score + 1)
 
@@ -353,11 +355,10 @@ describe("NFTBattle.sol testing", function () {
             console.log('new_winner_nft_owner', new_winner_nft_owner)
             expect(new_winner_nft_owner).to.equal(user1_nft_owner)
         } else {
-            const new_winner_nft_owner_in_pool = await nft_battle_pool_v2.getNFTOwner(match_data_in_contract.arenaNFT, match_data_in_contract.arenaTokenId)
+            const new_winner_nft_owner_in_pool = await nft_battle_pool_v2.getNFTOwner(winner_nft, winner_token_id)
             console.log('new_winner_nft_owner_in_pool', new_winner_nft_owner_in_pool)
             expect(new_winner_nft_owner_in_pool).to.equal(user1_nft_owner)
         }
-
     })
 
     it('test determineIncludeJPGBySys()', async () => {
@@ -413,32 +414,29 @@ describe("NFTBattle.sol testing", function () {
         console.log('nft_battle_v2.determineIncludeJPGBySys() gas used', getGasUsedAndGasPriceFromReceipt(receipt))
 
         // verify data
-        const match_data_in_contract = fetchToMatchDataV2(await nft_battle_v2.getMatchData(match_data_param.matchId))
-        console.log('match_data_in_contract', match_data_in_contract)
-        expect(match_data_in_contract.arenaNFT != ethers.constants.AddressZero).to.equal(true)
-        expect(match_data_in_contract.winner).equal(winner.address)
-        expect(match_data_in_contract.determinedAt).greaterThan(0)
+        if (winner_jpg != '') {
+            // 检查是否已经铸造NFT
+            const event_param = getLogFromReceipt(receipt, nft_battle_v2, 'DeterminedIncludeJPG')
 
-        if (match_data_in_contract.voteArenaCount > match_data_in_contract.voteChallengeCount) {
-            winner_nft = match_data_in_contract.arenaNFT
-            winner_token_id = match_data_in_contract.arenaTokenId
+            winner_nft = event_param.winner_nft
+            winner_token_id = event_param.winner_tokenId
         } else {
-            winner_nft = match_data_in_contract.challengeNFT
-            winner_token_id = match_data_in_contract.challengeTokenId
+            if (match_data_param.voteArenaCount > match_data_param.voteChallengeCount) {
+                winner_nft = match_data_param.arenaNFT
+                winner_token_id = match_data_param.arenaTokenId
+            } else {
+                winner_nft = match_data_param.challengeNFT
+                winner_token_id = match_data_param.challengeTokenId
+            }
         }
-
-        const new_winner_match_ids = await nft_battle_v2.getNFTWonMatches(winner_nft, winner_token_id)
-        console.log('new_winner_match_ids', new_winner_match_ids)
-        expect(new_winner_match_ids.length).to.equal( 1)
-        expect(new_winner_match_ids[new_winner_match_ids.length - 1]).to.equal(match_data_param.matchId)
 
         let loser_ko_score = 0
         if (loser_nft != ethers.constants.AddressZero) {
-            loser_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(loser_nft, loser_token_id))
+            loser_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(loser_nft, loser_token_id))
         }
         console.log('loser_ko_score', loser_ko_score)
 
-        const new_winner_ko_score = bnToNoPrecisionNumber(await nft_battle_v2.getNFTKOScore(winner_nft, winner_token_id))
+        const new_winner_ko_score = bnToNoPrecisionNumber(await battle_ko_score.getKOScore(winner_nft, winner_token_id))
         console.log('new_winner_ko_score', new_winner_ko_score)
         expect(new_winner_ko_score).to.equal(loser_ko_score + 1)
 
@@ -487,7 +485,7 @@ describe("NFTBattle.sol testing", function () {
             console.log('winner_nft_frozen_after', winner_nft_frozen_after)
             expect(winner_nft_frozen_after).to.false
 
-            const new_winner_nft_owner_in_pool = await nft_battle_pool_v2.getNFTOwner(match_data_in_contract.arenaNFT, match_data_in_contract.arenaTokenId)
+            const new_winner_nft_owner_in_pool = await nft_battle_pool_v2.getNFTOwner(winner_nft, winner_token_id)
             console.log('new_winner_nft_owner_in_pool', new_winner_nft_owner_in_pool)
             expect(new_winner_nft_owner_in_pool).to.equal(winner.address)
         }

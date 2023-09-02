@@ -1,5 +1,5 @@
-// ##deployed index: 113
-// ##deployed at: 2023/08/28 22:41:53
+// ##deployed index: 128
+// ##deployed at: 2023/09/02 18:48:01
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -13,6 +13,7 @@ import "./dependencies/ECDSAUpgradeable.sol";
 import "./interfaces/INFTBattlePoolV2.sol";
 import "./interfaces/INFTBattleV2.sol";
 import "./interfaces/ICreationNFTV2.sol";
+import "./interfaces/IBattleKOScore.sol";
 import "./libraries/MatchStructsV2.sol";
 
 contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, PausableUpgradeable, ReentrancyGuardUpgradeable {
@@ -21,15 +22,6 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
     // User address => nonce
     mapping(address => uint256) private user_nonces;
 
-    // Match Id => MatchData
-    mapping(bytes32 => MatchStructsV2.MatchData) private matches;
-
-    // NFT address => (tokenId => MatchId[])
-    mapping(address => mapping(uint256 => bytes32[])) private nft_won_matches;
-
-    // NFT address => (tokenId => ko score)
-    mapping(address => mapping(uint256 => uint256)) private nft_ko_scores;
-
     uint96 minimum_vote_amount;
 
     INFTBattlePoolV2 public override nft_battle_pool_v2;
@@ -37,6 +29,8 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
     ICreationNFTV2 public override creation_nft_v2;
 
     address public override verifier_address;
+
+    IBattleKOScore public override battle_ko;
 
     /// @notice This method is called by the proxy contract to initialize the contract.
     function initialize() public initializer {
@@ -75,6 +69,13 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         verifier_address = _verifier_address;
 
         emit SetVerifierAddress(_verifier_address);
+    }
+
+    function setBattleKO(address _battle_ko_address) external override whenNotPaused onlyOwner {
+        require(Address.isContract(_battle_ko_address), "NFTBattle: BattleKO is not a contract");
+        battle_ko = IBattleKOScore(_battle_ko_address);
+
+        emit SetBattleKO(_battle_ko_address);
     }
 
     /// @notice Battle裁决
@@ -137,13 +138,6 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         return user_nonces[_user];
     }
 
-    /// @notice 获取比赛数据
-    /// @param _match_id 比赛ID
-    /// @return 比赛数据
-    function getMatchData(bytes32 _match_id) external override view returns (MatchStructsV2.MatchData memory) {
-        return matches[_match_id];
-    }
-
     /// @notice 获取用户投票的hash
     /// @param _user_vote 用户投票数据
     /// @return hash值
@@ -158,22 +152,6 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
             _user_vote.votedAt,
             _user_vote.extraSignature
         ))));
-    }
-
-    /// @notice 获取NFT赢得的比赛
-    /// @param _nft_address NFT地址
-    /// @param _nft_tokenId NFT tokenId
-    /// @return 比赛ID数组
-    function getNFTWonMatches(address _nft_address, uint256 _nft_tokenId) external override view returns (bytes32[] memory) {
-        return nft_won_matches[_nft_address][_nft_tokenId];
-    }
-
-    /// @notice 获取NFT的KO分数
-    /// @param _nft_address NFT地址
-    /// @param _nft_tokenId NFT tokenId
-    /// @return KO分数
-    function getNFTKOScore(address _nft_address, uint256 _nft_tokenId) external override view returns (uint256) {
-        return nft_ko_scores[_nft_address][_nft_tokenId];
     }
 
     function checkUserVote(MatchStructsV2.UserVote calldata _user_vote, bytes calldata _signature) external view override returns (bool) {
@@ -269,10 +247,9 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         // burn loser's nft
         nft_battle_pool_v2.burnNFT(_vars.loser_address, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
-        _updateMatchData(_match_data_param, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
+        _updateMatchData(_vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
-        emit Determined(_match_data_param.matchId, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
-//        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
+        emit Determined(_match_data_param.matchId, _vars.winner_address, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
 
         // 由系统执行的时候，需要冻结赢家的NFT
         if (_executor != address(0)) {
@@ -284,8 +261,6 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         if (_redeem_nft) {
             nft_battle_pool_v2.redeemToOwner(_vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id);
         }
-
-        delete _vars;
     }
 
     struct DetermineIncludeJPGVars {
@@ -376,17 +351,15 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
             nft_battle_pool_v2.burnNFT(_vars.loser_address, _vars.loser_nft_address, _vars.loser_nft_token_id);
         }
 
-        _updateMatchData(_match_data_param, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
+//        _updateMatchData(_match_data_param, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
+        _updateMatchData(_vars.winner_nft_address, _vars.winner_nft_token_id, _vars.loser_nft_address, _vars.loser_nft_token_id);
 
-        emit DeterminedIncludeJPG(_match_data_param.matchId, _vars.winner_nft_address, _vars.winner_nft_token_id, _vars.winner_jpg, _vars.loser_nft_address, _vars.loser_nft_token_id, _vars.loser_jpg, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
-//        emit MatchDataSignatures(_match_data_param.arenaOwnerSignature, _match_data_param.challengeOwnerSignature, _match_data_param.extraSignature);
+        emit DeterminedIncludeJPG(_match_data_param.matchId, _vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _match_data_param.merkleTreeURI, _match_data_param.merkleTreeRoot);
 
         // 由系统执行的时候，需要冻结赢家的NFT
         if (_executor != address(0)) {
             nft_battle_pool_v2.freezeNFT(_vars.winner_address, _vars.winner_nft_address, _vars.winner_nft_token_id, _executor);
         }
-
-        delete _vars;
     }
 
     function _checkMatchData(MatchStructsV2.MatchDataParam calldata _match_data_param) private view returns (bool) {
@@ -409,56 +382,12 @@ contract NFTBattleV2 is INFTBattleV2, Initializable, OwnableUpgradeable, Pausabl
         return _hash.recover(_extra_signature) == verifier_address;
     }
 
-    function _updateMatchData(MatchStructsV2.MatchDataParam calldata _match_data_param, address _winner_address, address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {
-        // update matches result data
-        bytes32 _match_id = _match_data_param.matchId;
-        matches[_match_id] = MatchStructsV2.MatchData({
-            arenaOwner: _match_data_param.arenaOwner,
-            arenaNFT: _match_data_param.arenaNFT,
-            challengeOwner: _match_data_param.challengeOwner,
-            challengeNFT: _match_data_param.challengeNFT,
-            winner: _winner_address,
-            voteArenaCount: _match_data_param.voteArenaCount,
-            voteChallengeCount: _match_data_param.voteChallengeCount,
-            arenaTokenId: _match_data_param.arenaTokenId,
-            challengeTokenId: _match_data_param.challengeTokenId,
-            determinedAt: block.timestamp,
-            merkleTreeRoot: _match_data_param.merkleTreeRoot
-        });
-//        matches[_match_id].matchId = _match_id;
-//        matches[_match_id].matchStartTime = _match_data_param.matchStartTime;
-//        matches[_match_id].matchEndTime = _match_data_param.matchEndTime;
-//        matches[_match_id].voteCount = _match_data_param.voteCount;
-/*        matches[_match_id].voteArenaCount = _match_data_param.voteArenaCount;
-        matches[_match_id].voteChallengeCount = _match_data_param.voteChallengeCount;
-        matches[_match_id].arenaOwner = _match_data_param.arenaOwner;
-        matches[_match_id].arenaNFT = _match_data_param.arenaNFT;
-        matches[_match_id].arenaTokenId = _match_data_param.arenaTokenId;
-        matches[_match_id].challengeOwner = _match_data_param.challengeOwner;
-        matches[_match_id].challengeNFT = _match_data_param.challengeNFT;
-        matches[_match_id].challengeTokenId = _match_data_param.challengeTokenId;
-        matches[_match_id].merkleTreeRoot = _match_data_param.merkleTreeRoot;
-        matches[_match_id].winner = _winner_nft_address == _match_data_param.arenaNFT ? _match_data_param.arenaOwner : _match_data_param.challengeOwner;
-        matches[_match_id].determinedAt = block.timestamp;*/
-
-        // After JPG to NFT, we need to update the new NFT address and tokenId to match_data
-        if (_match_data_param.voteArenaCount > _match_data_param.voteChallengeCount) {
-            if (_match_data_param.arenaNFT == address(0)) {
-                matches[_match_id].arenaNFT = _winner_nft_address;
-                matches[_match_id].arenaTokenId = _winner_nft_token_id;
-            }
-        } else {
-            if (_match_data_param.challengeNFT == address(0)) {
-                matches[_match_id].challengeNFT = _winner_nft_address;
-                matches[_match_id].challengeTokenId = _winner_nft_token_id;
-            }
-        }
-
-        nft_won_matches[_winner_nft_address][_winner_nft_token_id].push(_match_id);
-
+    function _updateMatchData(address _winner_nft_address, uint256 _winner_nft_token_id, address _loser_nft_address, uint256 _loser_nft_token_id) private {
+        uint256 _new_score;
         unchecked {
-            // update nft ko score
-            nft_ko_scores[_winner_nft_address][_winner_nft_token_id] = nft_ko_scores[_loser_nft_address][_loser_nft_token_id] + 1;
+            _new_score = battle_ko.getKOScore(_loser_nft_address, _loser_nft_token_id) + 1;
         }
+
+        battle_ko.updateBattleKOScore(_winner_nft_address, _winner_nft_token_id, _new_score);
     }
 }

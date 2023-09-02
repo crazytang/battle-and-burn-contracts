@@ -14,6 +14,7 @@ import {TransactionReceipt} from "@ethersproject/abstract-provider";
 import CreationNFT_data from "../../contract-data/CreationNFT-data";
 import NFTBattlePoolV2_data from "../../contract-data/NFTBattlePoolV2-data";
 import CreationNFTV2_data from "../../contract-data/CreationNFTV2-data";
+import BattleKOScore_data from "../../contract-data/BattleKOScore-data";
 
 const provider = contract_l2_provider_getter()
 const admin_wallet = get_admin_wallet(provider)
@@ -38,6 +39,23 @@ async function main() {
         console.log('new_contract_proxy_contract.setVerifierAddress() tx', tx.hash)
         receipt = await tx.wait()
         console.log('new_contract_proxy_contract.setVerifierAddress() gasUsed', getGasUsedAndGasPriceFromReceipt(receipt))
+    }
+
+    const battle_ko_address = await new_contract_proxy_contract.battle_ko()
+    if (battle_ko_address !== BattleKOScore_data.address) {
+        tx = await new_contract_proxy_contract.setBattleKO(BattleKOScore_data.address, getTransactionOptions())
+        console.log('new_contract_proxy_contract.setBattleKO() tx', tx.hash)
+        receipt = await tx.wait()
+        console.log('new_contract_proxy_contract.setBattleKO() gasUsed', getGasUsedAndGasPriceFromReceipt(receipt))
+    }
+
+    const battle_ko = await ethers.getContractAt('BattleKOScore', BattleKOScore_data.address, admin_wallet)
+    const nft_battle_v2_in_ko = await battle_ko.nft_battle_v2()
+    if (nft_battle_v2_in_ko !== new_contract_proxy_contract.address) {
+        tx = await battle_ko.setNFTBattle(new_contract_proxy_contract.address, getTransactionOptions())
+        console.log('battle_ko.setNFTBattle() tx', tx.hash)
+        receipt = await tx.wait()
+        console.log('battle_ko.setNFTBattle() gasUsed', getGasUsedAndGasPriceFromReceipt(receipt))
     }
 
     if (NFTBattlePoolV2_data !== undefined && NFTBattlePoolV2_data.address !== '') {

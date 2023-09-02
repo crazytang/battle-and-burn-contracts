@@ -1,14 +1,14 @@
-// deployed_index: 46
-// deployed_at: 2023/08/28 21:09:10
+// deployed_index: 59
+// deployed_at: 2023/09/02 17:02:55
 
 import {ProxyContractData} from "../helpers/interfaces/proxy_contract_data_interface";
 const NFTBattlePoolV2_data: ProxyContractData = {
     env: 'dev',
     network: 'goerli',
     contract_name: 'NFTBattlePoolV2',
-    address: '0x3996Ecb508dBe5b78b8d41CD1745cf91cFAfD36d',
-    proxy_address: '0x3996Ecb508dBe5b78b8d41CD1745cf91cFAfD36d',
-    target_address: '0x51Ba06D7850EfEa7a84c1491221b6cea581F770B',
+    address: '0xf3a33Bb1162392a830e9788e4Ae18B398F999293',
+    proxy_address: '0xf3a33Bb1162392a830e9788e4Ae18B398F999293',
+    target_address: '0xC0924a2277f99401A6272B13EBfae789d5213C2D',
     libraries: [],
     abi:  [
     {
@@ -141,6 +141,37 @@ const NFTBattlePoolV2_data: ProxyContractData = {
         }
       ],
       "name": "Redeemed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "nft_address",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "RedeemedFrom",
       "type": "event"
     },
     {
@@ -350,6 +381,30 @@ const NFTBattlePoolV2_data: ProxyContractData = {
       "name": "freezeNFT",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_nft_address",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getNFTId",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {

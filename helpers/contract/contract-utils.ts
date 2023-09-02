@@ -162,13 +162,17 @@ export const getGasUsedAndGasPriceFromReceipt = (receipt: ContractReceipt): [num
 
 export const getLogFromReceipt = (receipt: ContractReceipt, contract: Contract,  event_name: string): any => {
     for (let log of receipt.logs) {
-        const parsed = contract.interface.parseLog(log)
-        if (parsed.name === event_name) {
-            return parsed.args  // 事件的参数
+        try {
+            const parsed = contract.interface.parseLog(log)
+            if (parsed.name === event_name) {
+                return parsed.args  // 事件的参数
+            }
+        } catch (e) {
+
         }
     }
 
-    return null
+    throw new Error('no event ' + event_name + ' in receipt ' + receipt.transactionHash)
 }
 
 export const solidityAbiEncode = (types: string[], values: any[]): string => {
